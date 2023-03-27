@@ -1,0 +1,374 @@
+---
+title: "SOM examples -- winter SLP"
+format: html
+editor: visual
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+
+### SOM Setup
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(ncdf4)
+library(chron)
+library(tidyverse)
+library(kohonen) # fitting
+library(aweSOM) # plotting
+library(SOMbrero) # plotting
+set.seed(1234)
+```
+
+```{r loaddata}
+#| echo: false
+#| warning: false
+#| message: false
+# start by loading NE Pacific SST
+nc <- nc_open("copernicus_mar21.nc")
+```
+
+```{r getcoords}
+#| echo: false
+#| warning: false
+#| message: false
+# get lat/long
+x <- ncvar_get(nc, "longitude")
+y <- ncvar_get(nc, "latitude")
+lat <- rep(y, length(x))   # Vector of latitudes
+lon <- rep(x, each = length(y))   # Vector of longitudes
+```
+
+```{r gettimes}
+#| echo: false
+#| warning: false
+#| message: false
+# get times
+raw <- ncvar_get(nc, "time")
+tunits<-ncatt_get(nc,"time",attname="units")
+tustr<-strsplit(tunits$value, " ")
+dates <- RNetCDF::utcal.nc("hours since 1900-01-01 00:00:00.0", raw)
+dates <- as.data.frame(dates[,c("year","month")])
+dates$index <- seq(1, nrow(dates))
+dates$winter_year <- dates$year
+dates$winter_year[which(dates$month %in% 4:10)] <- NA
+dates$winter_year[which(dates$month %in% 11:12)] <- dates$winter_year[which(dates$month %in% 11:12)] + 1 # incremenent 
+```
+
+Now we can extract the variable of interest
+
+```{r}
+var_name = "msl"
+```
+
+```{r extract}
+#| echo: false
+#| warning: false
+#| message: false
+tmp_array <- ncvar_get(nc,var_name)
+dlname <- ncatt_get(nc,var_name,"long_name")
+dunits <- ncatt_get(nc,var_name,"units")
+fillvalue <- ncatt_get(nc,var_name,"_FillValue")
+# replace netCDF fill values with NA's
+tmp_array[tmp_array==fillvalue$value] <- NA
+X <- tmp_array
+```
+
+```{r process}
+#| echo: false
+#| warning: false
+#| message: false
+# The 1st dimension of X is lon, 2nd dimension is lat, 3rd dimension is date. But the array needs to be flattened (time on rows, spatial cells on columns) for easier use.
+X <- aperm(X, 3:1) # transpose array # X
+X <- matrix(X, nrow=dim(X)[1], ncol=prod(dim(X)[2:3])) # months in rows, cells in columns! 
+to_drop <- which(is.na(apply(X,2,sum)))
+if(length(to_drop) > 0) {
+X <- X[,-to_drop]# drop cells with NAs 
+winter_lat <- lat[-to_drop]
+winter_lon <- lon[-to_drop]
+} else {
+  winter_lat <- lat
+  winter_lon <- lon
+}
+# Add block for winter average calculations
+winter_years <- unique(dates$winter_year)
+winter_years <- sort(winter_years[-which(is.na(winter_years))])
+X_winter <- matrix(NA, length(winter_years), ncol(X))
+for(i in 1:length(winter_years)) {
+  X_winter[i,] = colMeans(X[which(dates$winter_year == winter_years[i]),])
+}
+
+```
+
+### Fitting the SOM model
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+grid_dim1 <- 3
+grid_dim2 <- 2 
+grid_shape <- 'rectangular' 
+
+# fit <- som(scale(X_winter), 
+#                grid=somgrid(grid_dim1, grid_dim2, grid_shape))
+
+#fit <- trainSOM(x.data = scale(X_winter), dimension = c(grid_dim1,grid_dim2), verbose = FALSE, nb.save = 0, topo = "square")
+```
+
+But because of the sensitivity to grids, we should iterate over grids of varying size. Here we'll just start with a 4x4, which should be large enough?
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+grids <- expand.grid(xdim = 2:7)
+grids$ydim <- grids$xdim + 1
+grids <- rbind(grids, data.frame(xdim = 2:7, ydim = 2:7))
+grids$mean_dist <- NA
+grids$size <- grids$xdim * grids$ydim
+# fit <- list()
+# for(i in 1:nrow(grids)) {
+#   # kohonen
+#   #fit[[i]] <- som(scale(X_winter), 
+#   #             grid=somgrid(grids$xdim[i], grids$ydim[i], grid_shape))
+#   #grids$mean_dist[i] <- mean(fit[[i]]$distances)
+#   # SOMbrero
+#   fit[[i]] <- trainSOM(x.data = scale(X_winter), dimension = c(grids$xdim[i],grids$ydim[i]), verbose = FALSE, nb.save = 0, topo = "square")
+# }
+
+fit <- trainSOM(x.data = scale(X_winter), dimension = c(4,4), verbose = FALSE, nb.save = 0, topo = "square")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#plot(grids$size, grids$mean_dist, xlab="Grid size", ylab="Mean distance")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#best_model <- which(grids$size == 16)
+
+output <- data.frame(winter_year = winter_years,
+                     cluster = fit$clustering)
+
+knitr::kable(output)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+X_winter <- as.data.frame(X_winter)
+X_winter$year <- winter_years
+
+# convert wide to long
+winter_long <- pivot_longer(X_winter, cols = 1:(ncol(X_winter)-1))
+winter_long$cell_id <- as.numeric(substr(winter_long$name,2,length(winter_long$name)))
+winter_long$lat <- winter_lat[winter_long$cell_id]
+winter_long$long <- winter_lon[winter_long$cell_id]
+winter_long <- dplyr::rename(winter_long, winter_year = year) 
+# join in cluster IDs
+winter_long <- dplyr::left_join(winter_long, output)
+
+# Now calculated cluster avgs
+cluster_avg <- dplyr::group_by(winter_long, cell_id) %>%
+  dplyr::mutate(z = (value - mean(value))/sd(value)) %>%
+  dplyr::group_by(cell_id, cluster) %>%
+  dplyr::summarise(mean = mean(z),
+                   lat = lat[1],
+                   long = long[1])
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+g = ggplot(cluster_avg, aes(long, lat)) + 
+  geom_raster(aes(fill = mean)) + 
+  facet_wrap(~cluster) + 
+  #scale_color_gradient2() + 
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+g
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+# png("plots/winter_map_sst.png")
+# g
+# dev.off()
+```
+
+Interpreting this many of SOM prototypes is challenging, and many of the maps appear to be redundant. One approach used with SOMs is post-hoc clustering of the maps. With winter SST, there appears to be \~ 4 groups:
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+plot(superClass(fit))
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+sc <- superClass(fit, k = 4)
+output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster = sc$cluster)
+knitr::kable(output_cluster)
+
+output <- dplyr::left_join(output, output_cluster)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+ggplot(output, aes(winter_year, super_cluster)) + 
+  geom_point()
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+plot(sc, what = "obs", type = "hitmap", maxsize = 20)
+```
+
+\break
+
+### Alternative standardization
+
+In the above example, we scaled the time series in each spatial cell to be Normal(0,1). That removes the spatial pattern, but not the global trend or the spatial trend. We can re-run the above models using each of these approaches.
+
+#### Standardize + remove global trend
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+X_winter <- matrix(NA, length(winter_years), ncol(X))
+for(i in 1:length(winter_years)) {
+  X_winter[i,] = colMeans(X[which(dates$winter_year == winter_years[i]),])
+}
+
+# remove annual mean for each year
+for(i in 1:nrow(X_winter)) {
+  X_winter[i,] = X_winter[i,] - mean(X_winter[i,], na.rm=T)
+}
+X_winter <- scale(X_winter)
+
+grids <- expand.grid(xdim = 2:7)
+grids$ydim <- grids$xdim + 1
+grids <- rbind(grids, data.frame(xdim = 2:7, ydim = 2:7))
+grids$mean_dist <- NA
+grids$size <- grids$xdim * grids$ydim
+# fit <- list()
+# for(i in 1:nrow(grids)) {
+#   fit[[i]] <- som(scale(X_winter), 
+#                grid=somgrid(grids$xdim[i], grids$ydim[i], grid_shape))
+#   grids$mean_dist[i] <- mean(fit[[i]]$distances)
+# }
+
+fit <- trainSOM(x.data = X_winter, dimension = c(4,4), verbose = FALSE, nb.save = 0, topo = "square")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#best_model <- which(grids$size == 16)
+
+output <- data.frame(winter_year = winter_years,
+                     cluster = fit$clustering)
+
+knitr::kable(output)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+X_winter <- as.data.frame(X_winter)
+X_winter$year <- winter_years
+
+# convert wide to long
+winter_long <- pivot_longer(X_winter, cols = 1:(ncol(X_winter)-1))
+winter_long$cell_id <- as.numeric(substr(winter_long$name,2,length(winter_long$name)))
+winter_long$lat <- winter_lat[winter_long$cell_id]
+winter_long$long <- winter_lon[winter_long$cell_id]
+winter_long <- dplyr::rename(winter_long, winter_year = year) 
+# join in cluster IDs
+winter_long <- dplyr::left_join(winter_long, output)
+
+# Now calculated cluster avgs
+cluster_avg <- dplyr::group_by(winter_long, cell_id) %>%
+  dplyr::mutate(z = (value - mean(value))/sd(value)) %>%
+  dplyr::group_by(cell_id, cluster) %>%
+  dplyr::summarise(mean = mean(z),
+                   lat = lat[1],
+                   long = long[1])
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+g = ggplot(cluster_avg, aes(long, lat)) + 
+  geom_raster(aes(fill = mean)) + 
+  facet_wrap(~cluster) + 
+  #scale_color_gradient2() + 
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+g
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+plot(superClass(fit))
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+sc <- superClass(fit, k = 4)
+output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster = sc$cluster)
+knitr::kable(output_cluster)
+
+output <- dplyr::left_join(output, output_cluster)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+ggplot(output, aes(winter_year, super_cluster)) + 
+  geom_point()
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+plot(sc, what = "obs", type = "hitmap", maxsize = 20)
+```

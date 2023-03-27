@@ -1,0 +1,17 @@
+---
+title: "SOM background"
+format: html
+editor: visual
+---
+
+### SOM Background
+
+There's lots of good tutorials and examples out there. See https://pjbartlein.github.io/REarthSysSci/netCDF.html or https://civil.colorado.edu/\\\~balajir/CVEN6833/HWs/Student-Solution-HW2/J-Garland-hw2-html/HW2_Q9.html
+
+### Creating the SOM grid
+
+There's a lot of info about SOM grid size. For example, this suggests an ideal grid size of \~ 5\*sqrt(N) , where N is the number of rows of the SST object.
+
+https://books.google.it/books?id=IOLWCQAAQBAJ&pg=PA550&lpg=PA550&dq=vesanto+grid+size&source=bl&ots=lvLIG3vgPP&sig=7KiHRQWGh6BffqoJY0eVs4LTrrM&hl=en&sa=X&redir_esc=y#v=onepage&q=vesanto%20grid%20size&f=false
+
+Results are sensitive to the grid size -- so ideally we would do a sensitivity across a range of values.
