@@ -7,17 +7,80 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(nord)
+library(tidyr)
+library(lubridate)
+library(readr)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(Cairo)
+library(MCMCvis)
+library(HDInterval)
+library(reshape2)
+library(tidyverse)
+library(dplyr)
+library(rstan)
+library(here)
+
 ```
 
-## R Markdown
+## Combining Bakun Data
+1) Import the Bakun upwelling data from each individual file associated with the 13 lat/long locations. Data versions are: 1˚ 6-hourly version
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r combine, include=FALSE}
+here::i_am("AtmosClimateProj/Src/BayesianLinearModels.Rmd")
+bakundat <-read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI276hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI306hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI336hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI366hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI396hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI426hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI456hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI486hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI516hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI546hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI576hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI606hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI616hr_d68d_e898_8529.csv')))
 ```
+
+2) Extract yyyy-mm-ddThh:mm:ss from the 'time' column and add region indicator based on station ID.
+
+```{r dates, include=FALSE}
+bakun <- bakundat%>%
+add_column('Year'=as.numeric(format(as.Date(bakundat$time),"%Y")))%>%
+add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
+add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
+
+bakun_region <- bakun%>%
+  filter(station_id=='33N'|station_id=='36N'|station_id=='39N')%>%
+  mutate(region="Southern CC")%>%
+bind_rows(bakun%>%
+  filter(station_id=='42N'|station_id=='45N'|station_id=='48N'|station_id=='51N')%>%
+  mutate(region="Northern CC"))%>%
+bind_rows(bakun%>%
+  filter(station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
+  mutate(region="GoA"))
+
+
+```
+3) Summarize across days and hours to get monthly means for region and year. If you revert to seasonal summaries return to here to summarise across dates without taking means of means.
+```{r summ, include=FALSE}
+bakun_summ <- bakun_region%>%
+  group_by(region, Year, Month) %>%
+  summarise(monthly_mean = mean(upwelling_index), monthly_sd = sd(upwelling_index))
+```
+4) Import PDO data
+```{r PDO, include=FALSE}
+bakun_summ <- bakun_region%>%
+  group_by(region, Year, Month) %>%
+  summarise(monthly_mean = mean(upwelling_index), monthly_sd = sd(upwelling_index))
+```
+
+
 
 ## Including Plots
 
