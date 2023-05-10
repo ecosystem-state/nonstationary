@@ -1,10 +1,12 @@
 ---
 title: "Bayesian Linear Analysis"
 author: "Megan Feddern"
-date: "2023-04-28"
+date: "2023-05-08"
 output:
+  html_document: 
+    toc: true
+    toc_depth: 4
   pdf_document: default
-  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -38,14 +40,23 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 ```
 
-Mapping Bakun Index locations
+**Changes since Meeting**
+- Tested covariance of station 51N; included in GoA not northern CC
+- PDO is unstandardized
+- Upwelling is standardized across entire time period (1967 - 2022), within region and within season (for the seasonal models - annaual model is not)
+- Tested model using seasonal averages instead of monthly means across season
+- Added a lagged year variable so the months of Nov and Dec are inculded with the correct Jan - Mar values for winter
+
+Mapping Bakun Index locations with the regions we have identified
+
 ```{r map, include=FALSE}
 
-here::i_am("AtmosClimateProj/Src/BayesianLinearModels.Rmd")
+here::i_am("Output/BayesianLinearModels.Rmd")
+col2<-pnw_palette("Sunset2",4,type="discrete")
 col<-pnw_palette("Sunset2",3,type="discrete")
-col2<-pnw_palette("Sunset2",8,type="continuous")
+col3<-pnw_palette("Sunset2",8,type="continuous")
 
-bakunsites <- read.csv(here('AtmosClimateProj/data/physical/Bakun/MapLocations.csv'))
+bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))
 sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
 agr = "constant")
 
@@ -54,32 +65,41 @@ world <- ne_countries(scale='medium',returnclass = 'sf')
 class(world)
 
 map <- ggplot(data = world) +
-   annotate("rect",xmin = -117, xmax = -157, ymin = 51.5, ymax = 62, 
-     fill = col[3], colour = col[3], size = 0.8, alpha=0.5) +
+   annotate("rect",xmin = -117, xmax = -157, ymin = 50.5, ymax = 62, 
+     fill = col2[1], colour = col2[1], size = 0.8, alpha=0.5) +
   annotate(geom = "text", x = -145, y = 55, label = "Gulf of Alaska", 
      fontface = "italic", color = "grey22", size = 4) +
-  annotate("rect",xmin = -135, xmax = -115, ymin = 40.4401, ymax = 51.5, 
-     fill = col[2], colour = col[2], size = 0.8, alpha=0.5) +
-  annotate(geom = "text", x = -130, y = 45, 
+  
+  annotate("rect",xmin = -140, xmax = -115, ymin = 40.4401, ymax = 50.5, 
+     fill = col2[2], colour = col2[2], size = 0.8, alpha=0.5) +
+  annotate(geom = "text", x = -134, y = 45, 
     label = str_wrap("Northern California  Current", width = 5),
     fontface = "italic", color = "grey22", size = 4) +
-   annotate("rect", xmin= -135, xmax = -115, ymin = 31.5, ymax = 40.4401, 
-     fill = col[1], colour = col[1], size = 0.8, alpha=0.5) +
-  annotate(geom = "text", x = -130, y = 36.5, 
+   
+   annotate("rect", xmin= -140, xmax = -115, ymin = 34.4486, ymax = 40.4401, 
+     fill = col2[4], colour = col2[4], size = 0.8, alpha=0.5) +
+   annotate(geom = "text", x = -132, y = 37, 
+    label = str_wrap("Central California  Current", width = 20),
+    fontface = "italic", color = "grey22", size = 3.75) +
+  
+  annotate("rect", xmin= -140, xmax = -105, ymin = 22.1, ymax = 34.4486, 
+     fill = col2[3], colour = col2[3], size = 0.8, alpha=0.5) +
+  annotate(geom = "text", x = -129, y = 27, 
     label = str_wrap("Southern California  Current", width = 5),
     fontface = "italic", color = "grey22", size = 4) +
-  geom_point(x=-160, y = 45,size = 3, shape = 23, col = "black", fill = col2[5])+
+  
+  geom_point(x=-160, y = 45,size = 3, shape = 23, col = "black", fill = col3[5])+
   annotate(geom = "text", x = -152, y = 45, 
     label = str_wrap("Bakun Index Location", width = 12),
      color = "grey22", size = 4) +
   geom_sf(fill='grey95') +
-  geom_sf(data = sites, size = 2, shape = 23, col = "black", fill = col2[5]) +
-     coord_sf(xlim = c(-165, -114), ylim = c(31.5, 62.5), expand = FALSE)+
+  geom_sf(data = sites, size = 2, shape = 23, col = "black", fill = col3[5]) +
+     coord_sf(xlim = c(-165, -108), ylim = c(22, 62.5), expand = FALSE)+
    scale_x_continuous(name = "") +
    scale_y_continuous(name = "") +
   theme(panel.background = element_rect(fill = "white"),
      panel.border = element_rect(fill = NA))
-
+map
 
 ```
 
@@ -93,21 +113,22 @@ map
 
 ```{r combine, include=FALSE}
 
-bakundat <-read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI276hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI306hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI336hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI366hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI396hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI426hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI456hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI486hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI516hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI546hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI576hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI606hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('AtmosClimateProj/data/physical/Bakun/erdUI616hr_d68d_e898_8529.csv')))
+bakundat <-read.csv(here('data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI276hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI306hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI336hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI366hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI396hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI426hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI456hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI486hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI516hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI546hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI576hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI606hr_d68d_e898_8529.csv')))%>%
+  bind_rows(read.csv(here('data/physical/Bakun/erdUI616hr_d68d_e898_8529.csv')))
 ```
+
 
 2) Extract yyyy-mm-ddThh:mm:ss from the 'time' column and add region indicator based on station ID and add a time period based on year
 
@@ -118,32 +139,115 @@ add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
 add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
 
 bakun_region <- bakun%>%
-  filter(station_id=='33N'|station_id=='36N'|station_id=='39N')%>%
-  mutate(region="Southern CC")%>%
+  filter(station_id=='36N'|station_id=='39N')%>%
+  mutate(region="Central CC")%>%
 bind_rows(bakun%>%
-  filter(station_id=='42N'|station_id=='45N'|station_id=='48N'|station_id=='51N')%>%
+  filter(station_id=='33N'|station_id=='30N'|station_id=='27N'|station_id=='24N')%>%
+  mutate(region="Southern CC"))%>%
+bind_rows(bakun%>%
+  filter(station_id=='42N'|station_id=='45N'|station_id=='48N')%>%
   mutate(region="Northern CC"))%>%
 bind_rows(bakun%>%
-  filter(station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
+  filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
   mutate(region="GoA"))
 
 
 ```
-3) Summarize across days and hours to get monthly means for region and year. If you revert to seasonal summaries return to here to summarise across dates without taking means of means. Adding standardized upwelling index
-```{r summ, include=FALSE}
-bakun_summ <- bakun_region%>%
-  group_by(region, Year, Month) %>%
-  summarise(monthly_mean = mean(na.omit(upwelling_index)), monthly_sd = sd(na.omit(upwelling_index)))%>%
-  mutate(stand_Bakun = (monthly_mean-mean(monthly_mean))/sd(monthly_mean))
 
-bakun_time <- bakun_summ%>%
-  filter(Year>1963 & Year<1989)%>%
+2) Test covariation and correlation between station 51N and 48N/54N. Station 51N covaries more with both stations 54N and 57N (GoA) compared to 48N (Northern CC) and I elected to include it in the GoA  
+
+```{r testcov,  include=FALSE, echo=FALSE, message = FALSE, warnings = FALSE}
+
+cov.dat.test <- bakun%>%select(station_id, Month, Day, Year, upwelling_index)%>%
+  group_by(Month, Day, Year, station_id) %>%
+  summarise(upwelling_index = mean(upwelling_index))%>%
+  pivot_wider(names_from = "station_id", values_from = "upwelling_index")
+
+
+cov.dat.test <- cov.dat.test[complete.cases(cov.dat.test),]
+
+cor(cov.dat.test$`48N`, cov.dat.test$`51N`)
+cor(cov.dat.test$`54N`, cov.dat.test$`51N`)
+cor(cov.dat.test$`54N`, cov.dat.test$`48N`)
+
+cov(cov.dat.test$`54N`, cov.dat.test$`51N`)
+cov(cov.dat.test$`48N`, cov.dat.test$`51N`)
+cov(cov.dat.test$`54N`, cov.dat.test$`48N`)
+cov(cov.dat.test$`51N`, cov.dat.test$`57N`)
+cov(cov.dat.test$`51N`, cov.dat.test$`45N`)
+
+
+ggplot(cov.dat.test, aes(x=`48N`, y=`51N`))+
+geom_smooth()
+
+ggplot(cov.dat.test, aes(x=`51N`, y=`54N`))+
+geom_smooth()
+
+ggplot(cov.dat.test, aes(x=`48N`, y=`54N`))+
+geom_smooth()
+
+```
+
+3) Summarize across days and hours to get monthly means for region and year. If you revert to seasonal summaries return to here to summarise across dates without taking means of means. Adding standardized upwelling index - upwelling is standardized across the entirety of the time period, but within region and space. **Note** because of the standardization positive values are above average for a given region and season for a year (cannot be interpreted as downwelling versus upwelling)
+
+```{r summ, include=FALSE}
+bakun_season <- bakun_region%>%
+  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+bind_rows(bakun_region%>%
+  filter(Month==4|Month==5|Month==6)%>%
+  mutate(season="Spring"))%>%
+bind_rows(bakun_region%>%
+  filter(Month==7|Month==8)%>%
+  mutate(season="Summer"))%>%
+mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
+
+
+bakun_summ_season2 <- bakun_season%>%  
+  group_by(season, region) %>%
+  summarise(seasonal_mean = mean(na.omit(upwelling_index)), seasonal_sd =sd(na.omit(upwelling_index)))
+
+bakun_summ_annual2 <- bakun_season%>%  
+  group_by(region) %>%
+  summarise(yearly_mean = mean(na.omit(upwelling_index)), yearly_sd =sd(na.omit(upwelling_index)))
+
+bakun_summ_annual <- bakun_season%>%
+  group_by(region, Year_lag) %>%
+  summarise(annual_mean = mean(na.omit(upwelling_index)))%>%
+  ungroup()%>%
+  right_join(bakun_summ_annual2, by = c( 'region'))%>%
+  mutate(stand_bakun_annual = (annual_mean-yearly_mean)/yearly_sd)%>%
+  select(Year_lag, region,stand_bakun_annual)
+
+bakun_summ_seasonal <- bakun_season%>%
+  group_by(region, Year_lag,  season) %>%
+  summarise(season_mean = mean(na.omit(upwelling_index)))%>%
+  ungroup()%>%
+  right_join(bakun_summ_season2, by = c('season', 'region'))%>%
+  mutate(stand_bakun_seasonally = (season_mean-seasonal_mean)/seasonal_sd)%>%
+  select(season,Year_lag, region,stand_bakun_seasonally)
+
+bakun_summ<- bakun_season%>%
+  group_by(Month, region, Year_lag) %>%
+  summarise(monthly_mean = mean(na.omit(upwelling_index)))%>%
+  mutate(stand_bakun_annually = (monthly_mean-mean(na.omit(monthly_mean)))/sd(na.omit(monthly_mean)))%>%
+  mutate(season=if_else(Month == 11|Month ==12|Month ==1|Month ==2|Month ==3, "Winter",
+                        if_else(Month ==4|Month ==5|Month ==6, "Spring",
+                                if_else(Month ==7|Month ==8, "Summer", "Autumn"))))%>%
+  right_join(bakun_summ_season2, by = c('region', 'season'))%>%
+  mutate(stand_bakun_monthly = (monthly_mean-seasonal_mean)/seasonal_sd)%>%
+  left_join(bakun_summ_seasonal)%>%
+  left_join(bakun_summ_annual)
+
+
+bakun_time <-bakun_summ%>%
+  filter(Year_lag>1963 & Year_lag<1989)%>%
   mutate(period='1')%>%
 bind_rows(bakun_summ%>%
-  filter(Year>1989 & Year<2014)%>%
+  filter(Year_lag>1989 & Year_lag<2014)%>%
   mutate(period='2'))%>%
 bind_rows(bakun_summ%>%
-  filter(Year>2013)%>%
+  filter(Year_lag>2013)%>%
   mutate(period='3'))%>%
   mutate(era.region = if_else(region == "GoA"&period == 1, 1, 
                         if_else(region == "GoA"&period == 2, 2, 
@@ -151,35 +255,97 @@ bind_rows(bakun_summ%>%
                             if_else(region == "Northern CC"&period == 1, 4,
                               if_else(region == "Northern CC"&period == 2, 5,
                                 if_else(region == "Northern CC"&period == 3, 6,
-                                   if_else(region == "Southern CC"&period == 1, 7,
-                                      if_else(region == "Southern CC"&period == 2, 8,
-                                        if_else(region == "Southern CC"&period == 3, 9, 10))))))))))
-        
+                                   if_else(region == "Central CC"&period == 1, 7,
+                                      if_else(region == "Central CC"&period == 2, 8,
+                                        if_else(region == "Central CC"&period == 3, 9, 
+                                          if_else(region == "Southern CC"&period == 1, 10,
+                                            if_else(region == "Southern CC"&period == 2, 11,
+                                              if_else(region == "Southern CC"&period == 3, 12,
+                                                  13)))))))))))))
+
 ```
-4) Import PDO data, standardize across teh 1967 - 2022 time period
+
+
+4) Import PDO data. Label months by a season factor. NOT standardized in this version - **Note** PDO CAN be interpreted as positive or negative BUT this is the data from the website so it has been detrended.
+
 ```{r PDO, include=FALSE}
-PDO <- read.csv(here('AtmosClimateProj/data/physical/PDO.csv'))%>%
+
+PDO <- read.csv(here('data/physical/PDO.csv'))%>%
   pivot_longer(!Year, names_to = "Month", values_to = "PDO")%>%
 mutate(Month = as.integer(factor(Month, levels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))))%>%
-  filter(Year>1966)%>%
-  mutate(stand_PDO = (PDO-mean(na.omit(PDO)))/sd(na.omit(PDO)))
+  filter(Year>1965)%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
 
+PDO_seasonal <-  PDO%>%
+  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+bind_rows(PDO%>%
+  filter(Month==4|Month==5|Month==6)%>%
+  mutate(season="Spring"))%>%
+bind_rows(PDO%>%
+  filter(Month==7|Month==8)%>%
+  mutate(season="Summer"))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
+  group_by(Year_lag, season)%>%
+  summarise(seasonal_PDO = mean(PDO))
+
+
+PDO_annual <-  PDO%>%
+  group_by(Year_lag)%>%
+  summarise(annual_PDO = mean(PDO))
 ```
 
 X) Merging the standardized datasets into a single dataframe
 
 ```{r MERGE, include=FALSE}
-climate <- bakun_time%>%
-  merge(PDO, by=c('Month', 'Year'))
-saveRDS(climate, file = here('AtmosClimateProj/Output/standat.rds'))
+climate_dat <- bakun_time%>%
+  merge(PDO, by=c('Month', 'Year_lag'))%>%
+  merge(PDO_annual, by=c('Year_lag'))%>%
+  merge(PDO_seasonal, by=c('season', 'Year_lag'))
+saveRDS(climate_dat, file = here('Output/standat.rds'))
 
 ```
 
 Run the STAN model outside of markdown file using "STANrun.R" which exports the posteriors so that the model does not run in markdown when you knit.
 
 ```{r STAN, include=FALSE}
-posterior <- readRDS(here("AtmosClimateProj/Output/posteriors.rds"))
+climate<-climate_dat
+N <- length(climate$period)
+NP <- 12
+P<- as.numeric(as.factor(climate$era.region))
+K <- 1
+x <- data.frame(climate$stand_bakun_annually)
+y<-climate$PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
 ```
+
 ## STAN Model
 Bayesian linear model with era specific intercept and slope and region specific slope,
 
@@ -193,45 +359,60 @@ where *e* is factor "era" corresponding to eras 1967 - 1988, 1989 - 2013, and 20
 | $\sigma$   | Combined observation and process error        | $~ Normal(0,10)[0,]$     |
 
 
+#PDO - Upwelling relationship analyses
 
 ## Monthly Mean Model 
 
 Linear relationship between monthly PDO Index and monthly upwelling (Bakun 1˚ 6-hourly) for each era and each region estimated from a Bayesian regression model.
 
 ```{r linearpdo, echo=FALSE}
-alphaP<-posterior[1:9,]%>%
-  add_column(region = rep(c("GoA", "NCC", "SCC"),each =3), 
-             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),3))
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
 
-scaled.anomaly<- c(rnorm(1000, alphaP$mean[1],alphaP$sd[1]),
-                   rnorm(1000, alphaP$mean[2],alphaP$sd[2]),
-                   rnorm(1000, alphaP$mean[3],alphaP$sd[3]),
-                   rnorm(1000, alphaP$mean[4],alphaP$sd[4]),
-                   rnorm(1000, alphaP$mean[5],alphaP$sd[5]),
-                   rnorm(1000, alphaP$mean[6],alphaP$sd[6]),
-                   rnorm(1000, alphaP$mean[7],alphaP$sd[7]),
-                   rnorm(1000, alphaP$mean[8],alphaP$sd[8]),
-                   rnorm(1000, alphaP$mean[9],alphaP$sd[9]))%>%
-  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),3),
-            region = rep(rep(c("GoA", "NCC", "SCC"),each = 3000)))%>%
-  rename(anomaly=...1)
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
 
-ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
-    facet_wrap(.~region, ncol = 3, scales='free') +
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+ggplot(data = climate, aes(x = stand_bakun_monthly, y = PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2,nrow=2, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
+
 
 ```
  
 Era specific intercepts across the entire region (Southern California Current to Gulf of Alaska) estimated from a Bayesian regression model
 
 ```{r intercept, echo=FALSE}
-ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   theme_bw() +
-  facet_wrap(.~region, ncol = 3, scales='free') +
+  facet_wrap(.~region, ncol = 2,nrow=2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2,nrow=2, scales='free') +
   geom_density(alpha = 0.7) +
   scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
   #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
@@ -243,58 +424,101 @@ ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
 
 
 
-## Winter Model (Nov - March)
+### Winter Model (Nov - March)
 
 Using monthly mean data through winter months (Nov - Mar) where data is standardized for the time period and season
 
 ```{r summWINTER, include=FALSE}
 
-climate <- bakun_time%>%
-  merge(PDO, by=c('Month', 'Year'))%>%
-  filter(Month==11| Month==12|Month==1|Month==2|Month==3)%>%
-  mutate(stand_PDO = (PDO-mean(na.omit(PDO)))/sd(na.omit(PDO)))%>%
-  mutate(stand_Bakun = (monthly_mean-mean(monthly_mean))/sd(monthly_mean))
-saveRDS(climate, file = here('AtmosClimateProj/Output/standat.rds'))
+climate <- climate_dat%>%
+  filter(Month==11| Month==12|Month==1|Month==2|Month==3)
+
+N <- length(climate$period)
+NP <- 12
+P<- as.numeric(as.factor(climate$era.region))
+K <- 1
+x <- data.frame(climate$stand_bakun_monthly)
+y<-climate$PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
 
 ```
 
 Linear relationship between monthly PDO Index and monthly upwelling (Bakun 1˚ 6-hourly) for each era and each region estimated from a Bayesian regression model using Winter Monthly Means (Nov-March).
 
 ```{r linearpdoWINTER, echo=FALSE}
-posterior <- readRDS(here("AtmosClimateProj/Output/posteriors.winter.rds"))
-alphaP<-alphaP<-posterior[1:9,]%>%
-  add_column(region = rep(c("GoA", "NCC", "SCC"),each =3), 
-             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),3))
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
 
-scaled.anomaly<- c(rnorm(1000, alphaP$mean[1],alphaP$sd[1]),
-                   rnorm(1000, alphaP$mean[2],alphaP$sd[2]),
-                   rnorm(1000, alphaP$mean[3],alphaP$sd[3]),
-                   rnorm(1000, alphaP$mean[4],alphaP$sd[4]),
-                   rnorm(1000, alphaP$mean[5],alphaP$sd[5]),
-                   rnorm(1000, alphaP$mean[6],alphaP$sd[6]),
-                   rnorm(1000, alphaP$mean[7],alphaP$sd[7]),
-                   rnorm(1000, alphaP$mean[8],alphaP$sd[8]),
-                   rnorm(1000, alphaP$mean[9],alphaP$sd[9]))%>%
-  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),3),
-            region = rep(rep(c("GoA", "NCC", "SCC"),each = 3000)))%>%
-  rename(anomaly=...1)
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
 
-ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
-    facet_wrap(.~region, ncol = 3, scales='free') +
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+ggplot(data = climate, aes(x = stand_bakun_monthly, y = PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2,nrow=2, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
 
+
 ```
 
 Era specific intercepts across the entire region (Southern California Current to Gulf of Alaska) estimated from a Bayesian regression model for winter months (Nov - March)
 
 ```{r interceptWINTER, echo=FALSE}
-ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   theme_bw() +
-  facet_wrap(.~region, ncol = 3, scales='free') +
+  facet_wrap(.~region, ncol = 2, nrow=2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2,nrow=2, scales='free') +
   geom_density(alpha = 0.7) +
   scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
   #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
@@ -305,44 +529,78 @@ ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
 ```
 
 
-## Spring Model (April - June)
+### Spring Model (April - June)
 
 Using monthly mean data through winter months (April - June) where data is standardized for the time period and season
 
 ```{r summSPRING, include=FALSE}
 
-climate <- bakun_time%>%
-  merge(PDO, by=c('Month', 'Year'))%>%
-  filter(Month==4| Month==5|Month==6)%>%
-  mutate(stand_PDO = (PDO-mean(na.omit(PDO)))/sd(na.omit(PDO)))%>%
-  mutate(stand_Bakun = (monthly_mean-mean(monthly_mean))/sd(monthly_mean))
-saveRDS(climate, file = here('AtmosClimateProj/Output/standat.rds'))
+climate <- climate_dat%>%
+  filter(Month==4| Month==5|Month==6)  
+  #mutate(stand_Bakun = (monthly_mean-mean(monthly_mean))/sd(monthly_mean))
+
+N <- length(climate$period)
+NP <- 12
+P<- as.numeric(as.factor(climate$era.region))
+K <- 1
+x <- data.frame(climate$stand_bakun_monthly)
+y<-climate$PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
 
 ```
 
 Linear relationship between monthly PDO Index and monthly upwelling (Bakun 1˚ 6-hourly) for each era and each region estimated from a Bayesian regression model using spring Monthly Means (April - June).
 
 ```{r linearpdoSPRING, echo=FALSE}
-posterior <- readRDS(here("AtmosClimateProj/Output/posteriors.spring.rds"))
-alphaP<-alphaP<-posterior[1:9,]%>%
-  add_column(region = rep(c("GoA", "NCC", "SCC"),each =3), 
-             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),3))
+#posterior <- readRDS(here("Output/posteriors.spring.rds"))
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
 
-scaled.anomaly<- c(rnorm(1000, alphaP$mean[1],alphaP$sd[1]),
-                   rnorm(1000, alphaP$mean[2],alphaP$sd[2]),
-                   rnorm(1000, alphaP$mean[3],alphaP$sd[3]),
-                   rnorm(1000, alphaP$mean[4],alphaP$sd[4]),
-                   rnorm(1000, alphaP$mean[5],alphaP$sd[5]),
-                   rnorm(1000, alphaP$mean[6],alphaP$sd[6]),
-                   rnorm(1000, alphaP$mean[7],alphaP$sd[7]),
-                   rnorm(1000, alphaP$mean[8],alphaP$sd[8]),
-                   rnorm(1000, alphaP$mean[9],alphaP$sd[9]))%>%
-  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),3),
-            region = rep(rep(c("GoA", "NCC", "SCC"),each = 3000)))%>%
-  rename(anomaly=...1)
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
 
-ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
-    facet_wrap(.~region, ncol = 3, scales='free') +
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+ggplot(data = climate, aes(x = stand_bakun_monthly, y = PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
@@ -354,9 +612,19 @@ ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
 Era specific intercepts across the entire region (Southern California Current to Gulf of Alaska) estimated from a Bayesian regression model for spring monthly means (April - June)
 
 ```{r interceptSPRING, echo=FALSE}
-ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   theme_bw() +
-  facet_wrap(.~region, ncol = 3, scales = "free") +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
   geom_density(alpha = 0.7) +
   scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
   #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
@@ -367,44 +635,75 @@ ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
 ```
 
 
-## Summer Model (July - August)
+### Summer Model (July - August)
 
 Using monthly mean data through winter months (July - August) where data is standardized for the time period and season
 
 ```{r summSUMMER, include=FALSE}
 
-climate <- bakun_time%>%
-  merge(PDO, by=c('Month', 'Year'))%>%
-  filter(Month==7| Month==8)%>%
-  mutate(stand_PDO = (PDO-mean(na.omit(PDO)))/sd(na.omit(PDO)))%>%
-  mutate(stand_Bakun = (monthly_mean-mean(monthly_mean))/sd(monthly_mean))
-saveRDS(climate, file = here('AtmosClimateProj/Output/standat.rds'))
+climate <- climate_dat%>%
+  filter(Month==7| Month==8)#saveRDS(climate, file = here('Output/standat.rds'))
 
+N <- length(climate$period)
+NP <- 12
+P<- as.numeric(as.factor(climate$era.region))
+K <- 1
+x <- data.frame(climate$stand_bakun_monthly)
+y<-climate$PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
 ```
 
 Linear relationship between monthly PDO Index and monthly upwelling (Bakun 1˚ 6-hourly) for each era and each region estimated from a Bayesian regression model using Summer Monthly Means (July - August).
 
 ```{r linearpdoSUMMER, echo=FALSE}
-posterior <- readRDS(here("AtmosClimateProj/Output/posteriors.summer.rds"))
-alphaP<-alphaP<-posterior[1:9,]%>%
-  add_column(region = rep(c("GoA", "NCC", "SCC"),each =3), 
-             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),3))
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
 
-scaled.anomaly<- c(rnorm(1000, alphaP$mean[1],alphaP$sd[1]),
-                   rnorm(1000, alphaP$mean[2],alphaP$sd[2]),
-                   rnorm(1000, alphaP$mean[3],alphaP$sd[3]),
-                   rnorm(1000, alphaP$mean[4],alphaP$sd[4]),
-                   rnorm(1000, alphaP$mean[5],alphaP$sd[5]),
-                   rnorm(1000, alphaP$mean[6],alphaP$sd[6]),
-                   rnorm(1000, alphaP$mean[7],alphaP$sd[7]),
-                   rnorm(1000, alphaP$mean[8],alphaP$sd[8]),
-                   rnorm(1000, alphaP$mean[9],alphaP$sd[9]))%>%
-  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),3),
-            region = rep(rep(c("GoA", "NCC", "SCC"),each = 3000)))%>%
-  rename(anomaly=...1)
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
 
-ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
-    facet_wrap(.~region, ncol = 3, scales='free') +
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC", "CCC","SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+ggplot(data = climate, aes(x = stand_bakun_monthly, y = PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
@@ -416,18 +715,425 @@ ggplot(data = climate, aes(x = stand_Bakun, y = PDO,col=period)) +
 Era specific intercepts across the entire region (Southern California Current to Gulf of Alaska) estimated from a Bayesian regression model for summer months (July - August)
 
 ```{r interceptSUMMER, echo=FALSE}
-ggplot(scaled.anomaly, aes(x = anomaly, fill = period)) +
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   theme_bw() +
-  facet_wrap(.~region, ncol = 3, scales = "free") +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
   geom_density(alpha = 0.7) +
   scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
   #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
   geom_vline(xintercept = 0, lty = 2) +
   labs(x = "Intercept (scaled anomaly)",
        y = "Posterior density")
-
 ```
 
+
+## Seasonal Mean Models
+
+These results utilize seasonal averagers rather than monthly means within a season. May be better for identifying trends that are not spuriously seasonal (i.e. changes in a given month) but tradeoff is less data and may miss some interesting dynamics as a result
+
+### Annual Model
+
+```{r seasonalANNUAL, include=FALSE}
+winter <- climate_dat%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,Year,annual_PDO)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+N <- length(winter$period)
+NP <- 12
+P<- as.numeric(as.factor(winter$era.region))
+K <- 1
+x <- data.frame(winter$stand_bakun_annual)
+y<-winter$annual_PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+```
+
+Plots of the annual average model.
+
+```{r seasonalANNUALplots, echo=FALSE}
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y = annual_PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope (scaled anomaly)",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
+### Winter Model
+
+Fitting the winter seasonal model
+
+```{r seasonalWINTER, include=FALSE}
+
+winter <- climate_dat%>%filter(season=="Winter")%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,Year,seasonal_PDO)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+
+N <- length(winter$period)
+NP <- 12
+P<- as.numeric(as.factor(winter$era.region))
+K <- 1
+x <- data.frame(winter$stand_bakun_seasonally)
+y<-winter$seasonal_PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+```
+
+Plots of the winter seasonal model.
+
+```{r seasonalWINTERplots, echo=FALSE}
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y = seasonal_PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope (scaled anomaly)",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
+### Spring Model
+
+Fitting the spring seasonal model
+
+```{r seasonalSPRING, include=FALSE}
+
+winter <- climate_dat%>%filter(season=="Spring")%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,Year,seasonal_PDO)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+N <- length(winter$period)
+NP <- 12
+P<- as.numeric(as.factor(winter$era.region))
+K <- 1
+x <- data.frame(winter$stand_bakun_seasonally)
+y<-winter$seasonal_PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+```
+
+Spring model plots
+
+```{r seasonalSPRINGplots, echo=FALSE}
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
+### Summer Model
+
+Fitting the summer seasonal model
+
+```{r seasonalSUMM, include=FALSE}
+
+winter <- climate_dat%>%filter(season=="Summer")%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,Year,seasonal_PDO)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+N <- length(winter$period)
+NP <- 12
+P<- as.numeric(as.factor(winter$era.region))
+K <- 1
+x <- data.frame(winter$stand_bakun_seasonally)
+y<-winter$seasonal_PDO
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+warmups <- 1000
+total_iterations <- 3000
+max_treedepth <-  10
+n_chains <-  3
+n_cores <- 4
+adapt_delta <- 0.95
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC", "CCC","SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+```
+
+Summer seasonal plots
+
+```{r seasonalSUMMplots, echo=FALSE}
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y = seasonal_PDO,col=period)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
 
 ## Questions / Thoughts
 
@@ -438,6 +1144,16 @@ Examine the relationship between SST and the same set of atmospheric variables (
 
 2) we could also compare these results to results with CUTI and BEUTI that use just the last two periods (CUTI and BEUTI account for more nuanced changes in cross and along shore wind; only data after 1988)
 
-3) other approaches for standardizing?
+3) *plankton case study* I think that this paper would be more compelling if it had some degree of biology. Maybe we could bring in some of the Zoop CalCofi data as a case study within the larger regional analysis and link these changing relationships to an ecosystem response - it would also be a nice thing to build our way up the food web with the salmon/groundfish part of the project and still take a foodweb wide view that was initially in the proposal. Are there are plankton datasets in the Southern California Current and/or GoA we could use?
 
-4) *plankton case study* I think that this paper would be more compelling if it had some degree of biology. Maybe we could bring in some of the Zoop CalCofi data as a case study within the larger regional analysis and link these changing relationships to an ecosystem response - it would also be a nice thing to build our way up the food web with the salmon/groundfish part of the project and still take a foodweb wide view that was initially in the proposal. Are there are plankton datasets in the Southern California Current and/or GoA we could use?
+4) How should we think/talk about intercepts. To me slopes are more compelling...
+
+## Interpretations
+
+**Winter** across all regions, the 1967 - 1988 period shows the greatest difference in intercept with the 1989 - 2013 period where the most recent heat wave period actually falls between the two however slopes are much more consistent with substantial posterior overlap for all three periods in all regions.
+
+**Spring** strong change in the slope of NCC during spring but less in other regions where it overlaps with the other two eras - this is consistent with both approaches to characterizing season.
+
+The seasonal average model shows more of a difference for the SCC for the most recent heatwave period than the monthly mean model.
+
+**Summer** Summer is pretty consistent in slop and intercept with the exception of the SCC intercept is different for the early and late periods compared to the middle.

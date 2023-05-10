@@ -33,5 +33,5 @@ bhfit <- stan(
                  adapt_delta = adapt_delta))
 
 posteriors<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
-saveRDS(posteriors, file = "Output/posteriors.rds")
+saveRDS(posteriors, file = "Output/posteriors.summer.rds")
 
