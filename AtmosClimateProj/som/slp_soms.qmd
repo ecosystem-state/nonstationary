@@ -16,6 +16,7 @@ execute:
 #| message: false
 library(ncdf4)
 library(chron)
+library(RNetCDF)
 library(tidyverse)
 library(kohonen) # fitting
 library(aweSOM) # plotting
@@ -29,7 +30,7 @@ refit = FALSE
 #| warning: false
 #| message: false
 # start by loading NE Pacific SST
-nc <- nc_open("copernicus_mar21.nc")
+nc <- nc_open("copernicus_jun19.nc")
 ```
 
 ```{r getcoords}
