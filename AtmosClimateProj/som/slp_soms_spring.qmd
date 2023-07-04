@@ -32,7 +32,7 @@ here::i_am("som/slp_soms_winter.qmd")
 #| warning: false
 #| message: false
 # start by loading NE Pacific SST
-nc <- nc_open("copernicus_jun19.nc")
+nc <- nc_open(here("som/copernicus_jun27.nc"))
 ```
 
 ```{r getcoords}
@@ -71,7 +71,7 @@ var_name = "msl"
 Determining the dimensions (nodes)
 
 ```{r}
-dim <- c(3,3)
+dim <- c(3,2)
 ```
 
 ```{r extract}
@@ -241,6 +241,9 @@ output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster 
 knitr::kable(output_cluster)
 
 output <- dplyr::left_join(output, output_cluster)
+
+ggplot(output, aes(spring_year, cluster)) + 
+  geom_point()
 ```
 
 ```{r}
@@ -273,12 +276,14 @@ climate_dat <-readRDS(here('data/physical/climate_dat.rds'))%>%
 ggplot(climate_dat, aes(x = cluster, y=value,  label=spring_year, aes(col=period))) +
   facet_wrap(.~Index, ncol = 3, scales='free') +
   geom_text(aes(col=period))+
+    geom_smooth(method = "lm")+
   scale_color_manual(values =  col[1:3], labels=c('1940 - 1988', '1989 - 2013', '2014 - 2022'))+
   ylab("Index Value")
 
 ggplot(climate_dat, aes(x = cluster, y=value,  label=spring_year, aes(col=period2))) +
   facet_wrap(.~Index, ncol = 3, scales='free') +
   geom_text(aes(col=period2))+
+  geom_smooth(method = "lm")+
   scale_color_manual(values =  col[1:2], labels=c('1940 - 1979', '1979 - - 2022'))+
   ylab("Index Value")
 ```
@@ -391,6 +396,9 @@ output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster 
 knitr::kable(output_cluster)
 
 output <- dplyr::left_join(output, output_cluster)
+
+ggplot(output, aes(spring_year, cluster)) + 
+  geom_point()
 ```
 
 

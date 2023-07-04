@@ -61,6 +61,9 @@ col2<-pnw_palette("Sunset2",4,type="discrete")
 col<-pnw_palette("Sunset2",3,type="discrete")
 col3<-pnw_palette("Sunset2",8,type="continuous")
 
+col<-pnw_palette("Sunset2",3,type="discrete")
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+
 bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))
 sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
 agr = "constant")
@@ -108,205 +111,61 @@ map
 
 ```
 
-```{r map2}
+Upwelling trends through time. The annual average model shows evidence of a 1988/1989 change in the California Current that is most pronounced in the south. Spring upwelling model appears to have a 1988/1989 shift. Evidence for another shift are less pronounced. in the Northern CC 2022 actually appears to be anomalous, where it is pulling the the trend down that would normally be positive. 
+
+```{r map2, echo=FALSE}
+
+season_dat <- climate_dat %>% pivot_longer(cols=c('seasonal_ONI', 'seasonal_PDO','seasonal_NPGO'),
+                    names_to='Index',
+                    values_to='values')
+
+annual_dat <- climate_dat %>% pivot_longer(cols=c('annual_ONI', 'annual_PDO','annual_NPGO'),
+                    names_to='Index',
+                    values_to='values')
+
+ggplot(data = season_dat%>%filter(season=="Spring"), aes(x = Year_lag, y = values)) +
+    facet_wrap(.~Index, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Spring Index") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
+
+
+ggplot(data = climate_dat%>%filter(season=="Spring"), aes(x = Year_lag, y = stand_bakun_seasonally)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Annual Average Upwelling \n (Bakun 1˚ 6-hourly)") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
+
+
+ggplot(data = annual_dat, aes(x = Year_lag, y = values)) +
+    facet_wrap(.~Index, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Spring Index") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
+
+ggplot(data = climate_dat, aes(x = Year_lag, y = stand_bakun_annual)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Annual Average Upwelling \n (Bakun 1˚ 6-hourly)") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
+
+
+```
+
+
+
+```{r upwelling}
 map
 ```
 
-
-## Combining Bakun Data
-1) Import the Bakun upwelling data from each individual file associated with the 13 lat/long locations. Data versions are: 1˚ 6-hourly version
-
-```{r combine, include=FALSE}
-
-bakundat <-read.csv(here('data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI276hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI306hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI336hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI366hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI396hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI426hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI456hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI486hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI516hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI546hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI576hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI606hr_d68d_e898_8529.csv')))%>%
-  bind_rows(read.csv(here('data/physical/Bakun/erdUI616hr_d68d_e898_8529.csv')))
-```
-
-
-2) Extract yyyy-mm-ddThh:mm:ss from the 'time' column and add region indicator based on station ID and add a time period based on year
-
-```{r dates, include=FALSE}
-bakun <- bakundat%>%
-add_column('Year'=as.numeric(format(as.Date(bakundat$time),"%Y")))%>%
-add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
-add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
-
-bakun_region <- bakun%>%
-  filter(station_id=='36N'|station_id=='39N')%>%
-  mutate(region="Central CC")%>%
-bind_rows(bakun%>%
-  filter(station_id=='33N'|station_id=='30N'|station_id=='27N'|station_id=='24N')%>%
-  mutate(region="Southern CC"))%>%
-bind_rows(bakun%>%
-  filter(station_id=='42N'|station_id=='45N'|station_id=='48N')%>%
-  mutate(region="Northern CC"))%>%
-bind_rows(bakun%>%
-  filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
-  mutate(region="GoA"))
-
-
-```
-
-
-3) Summarize across days and hours to get monthly means for region and year. If you revert to seasonal summaries return to here to summarise across dates without taking means of means. Adding standardized upwelling index - upwelling is standardized across the entirety of the time period, but within region and space. **Note** because of the standardization positive values are above average for a given region and season for a year (cannot be interpreted as downwelling versus upwelling)
-
-```{r summ, include=FALSE}
-bakun_season <- bakun_region%>%
-  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
-  mutate(season="Winter")%>%
-bind_rows(bakun_region%>%
-  filter(Month==4|Month==5|Month==6)%>%
-  mutate(season="Spring"))%>%
-bind_rows(bakun_region%>%
-  filter(Month==7|Month==8)%>%
-  mutate(season="Summer"))%>%
-mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
-
-
-bakun_summ_season2 <- bakun_season%>%  
-  group_by(season, region) %>%
-  summarise(seasonal_mean = mean(na.omit(upwelling_index)), seasonal_sd =sd(na.omit(upwelling_index)))
-
-bakun_summ_annual2 <- bakun_season%>%  
-  group_by(region) %>%
-  summarise(yearly_mean = mean(na.omit(upwelling_index)), yearly_sd =sd(na.omit(upwelling_index)))
-
-bakun_summ_annual <- bakun_season%>%
-  group_by(region, Year_lag) %>%
-  summarise(annual_mean = mean(na.omit(upwelling_index)))%>%
-  ungroup()%>%
-  right_join(bakun_summ_annual2, by = c( 'region'))%>%
-  mutate(stand_bakun_annual = (annual_mean-yearly_mean)/yearly_sd)%>%
-  select(Year_lag, region,stand_bakun_annual)
-
-bakun_summ_seasonal <- bakun_season%>%
-  group_by(region, Year_lag,  season) %>%
-  summarise(season_mean = mean(na.omit(upwelling_index)))%>%
-  ungroup()%>%
-  right_join(bakun_summ_season2, by = c('season', 'region'))%>%
-  mutate(stand_bakun_seasonally = (season_mean-seasonal_mean)/seasonal_sd)%>%
-  select(season,Year_lag, region,stand_bakun_seasonally)
-
-bakun_summ<- bakun_season%>%
-  group_by(Month, region, Year_lag) %>%
-  summarise(monthly_mean = mean(na.omit(upwelling_index)))%>%
-  mutate(stand_bakun_annually = (monthly_mean-mean(na.omit(monthly_mean)))/sd(na.omit(monthly_mean)))%>%
-  mutate(season=if_else(Month == 11|Month ==12|Month ==1|Month ==2|Month ==3, "Winter",
-                        if_else(Month ==4|Month ==5|Month ==6, "Spring",
-                                if_else(Month ==7|Month ==8, "Summer", "Autumn"))))%>%
-  right_join(bakun_summ_season2, by = c('region', 'season'))%>%
-  mutate(stand_bakun_monthly = (monthly_mean-seasonal_mean)/seasonal_sd)%>%
-  left_join(bakun_summ_seasonal)%>%
-  left_join(bakun_summ_annual)
-
-
-bakun_time <-bakun_summ%>%
-  filter(Year_lag>1963 & Year_lag<1989)%>%
-  mutate(period='1')%>%
-bind_rows(bakun_summ%>%
-  filter(Year_lag>1989 & Year_lag<2014)%>%
-  mutate(period='2'))%>%
-bind_rows(bakun_summ%>%
-  filter(Year_lag>2013)%>%
-  mutate(period='3'))%>%
-  mutate(era.region = if_else(region == "GoA"&period == 1, 1, 
-                        if_else(region == "GoA"&period == 2, 2, 
-                          if_else(region == "GoA"&period == 3, 3,
-                            if_else(region == "Northern CC"&period == 1, 4,
-                              if_else(region == "Northern CC"&period == 2, 5,
-                                if_else(region == "Northern CC"&period == 3, 6,
-                                   if_else(region == "Central CC"&period == 1, 7,
-                                      if_else(region == "Central CC"&period == 2, 8,
-                                        if_else(region == "Central CC"&period == 3, 9, 
-                                          if_else(region == "Southern CC"&period == 1, 10,
-                                            if_else(region == "Southern CC"&period == 2, 11,
-                                              if_else(region == "Southern CC"&period == 3, 12,
-                                                  13)))))))))))))
-
-```
-
-
-4) Import PDO and NPGO data. Label months by a season factor. NOT standardized in this version - **Note** PDO CAN be interpreted as positive or negative BUT this is the data from the website so it has been detrended.
-
-```{r PDO, include=FALSE}
-
-PDO <- read.csv(here('data/physical/PDO.csv'))%>%
-  pivot_longer(!Year, names_to = "Month", values_to = "PDO")%>%
-mutate(Month = as.integer(factor(Month, levels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))))%>%
-  filter(Year>1965)%>%
-  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
-
-PDO_seasonal <-  PDO%>%
-  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
-  mutate(season="Winter")%>%
-bind_rows(PDO%>%
-  filter(Month==4|Month==5|Month==6)%>%
-  mutate(season="Spring"))%>%
-bind_rows(PDO%>%
-  filter(Month==7|Month==8)%>%
-  mutate(season="Summer"))%>%
-  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
-  group_by(Year_lag, season)%>%
-  summarise(seasonal_PDO = mean(PDO))
-
-
-PDO_annual <-  PDO%>%
-  group_by(Year_lag)%>%
-  summarise(annual_PDO = mean(PDO))
-
-NPGO <- read.csv(here('data/physical/NPGO.csv'))%>%
-  filter(Year>1965)%>%
-  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
-
-NPGO_seasonal <-  NPGO%>%
-  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
-  mutate(season="Winter")%>%
-bind_rows(NPGO%>%
-  filter(Month==4|Month==5|Month==6)%>%
-  mutate(season="Spring"))%>%
-bind_rows(NPGO%>%
-  filter(Month==7|Month==8)%>%
-  mutate(season="Summer"))%>%
-  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
-  group_by(Year_lag, season)%>%
-  summarise(seasonal_NPGO = mean(NPGO))
-
-
-NPGO_annual <-  NPGO%>%
-  group_by(Year_lag)%>%
-  summarise(annual_NPGO = mean(NPGO))
-
-
-
-
-```
-
-X) Merging the standardized datasets into a single dataframe and assigning levels
-
-```{r MERGE, include=FALSE}
-climate_dat <- bakun_time%>%
-  merge(PDO, by=c('Month', 'Year_lag'))%>%
-  merge(PDO_annual, by=c('Year_lag'))%>%
-  merge(PDO_seasonal, by=c('season', 'Year_lag'))%>%
-  left_join(NPGO, by=c('Month', 'Year_lag'))%>%
-  left_join(NPGO_annual, by=c('Year_lag'))%>%
-  left_join(NPGO_seasonal, by=c('season', 'Year_lag'))
-saveRDS(climate_dat, file = here('Output/standat.rds'))
-
-
-```
 
 Run the STAN model outside of markdown file using "STANrun.R" which exports the posteriors so that the model does not run in markdown when you knit.
 
@@ -1123,6 +982,360 @@ NPGO Model Comparison
 | Annual    | 0 (0) |  -442.5 (77.8)   |
 | Winter | 0 (0) | -420.1 (70.5)     |
 | Spring  | 0 (0)  | -16.0 (9.5)    |
+
+## ENSO 
+
+### Winter Model
+
+```{r ONIseasonalANNUAL, include=FALSE}
+annual <- climate_dat%>%
+  select(Year_lag, region, stand_bakun_seasonally,stand_bakun_annual,period, era.region,annual_ONI)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+N <- length(annual$period)
+NP <- 12
+P<- as.numeric(as.factor(annual$era.region))
+P2<- as.numeric(as.factor(annual$region))
+K <- 1
+x <- data.frame(annual$stand_bakun_annual)
+y<-annual$annual_ONI
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P2, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+
+bhfit.oni.annual <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+
+bhfit.oni.annual.era <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit.oni.annual.era, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+annual$region <-factor(annual$region, levels=region.lev) 
+scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+
+```
+
+Plots of the annual average model.
+
+```{r ONIANNUALplots, echo=FALSE}
+ggplot(data = annual, aes(x = stand_bakun_annual, y = annual_ONI,col=period)) +
+    facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope (scaled anomaly)",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
+
+
+Fitting the winter seasonal model
+
+```{r seasonalWINTERenso, include=FALSE}
+
+winter <- climate_dat%>%filter(season=="Winter")%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,seasonal_ONI)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+
+N <- length(winter$period)
+NP <- 12
+P<- as.numeric(as.factor(winter$era.region))
+P2<- as.numeric(as.factor(winter$region))
+K <- 1
+x <- data.frame(winter$stand_bakun_seasonally)
+y<-winter$seasonal_ONI
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P2, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+bhfit.oni.winter <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+bhfit.oni.winter.era <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit.oni.winter.era, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+winter$region <-factor(winter$region, levels=region.lev) 
+scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+
+```
+
+Plots of the winter seasonal model.
+
+```{r seasonalWINTERplotsenso, echo=FALSE}
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y = seasonal_ONI,col=period)) +
+    facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope (scaled anomaly)",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
+### Spring Model
+
+Fitting the spring seasonal model
+
+```{r seasonalSPRINGoni, include=FALSE}
+
+spring <- climate_dat%>%filter(season=="Spring")%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,seasonal_ONI)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+N <- length(spring$period)
+NP <- 12
+P<- as.numeric(as.factor(spring$era.region))
+P2<- as.numeric(as.factor(spring$region))
+K <- 1
+x <- data.frame(spring$stand_bakun_seasonally)
+y<-spring$seasonal_ONI
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P2, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+bhfit.oni.spring <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+bhfit.oni.spring.era <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit.oni.spring.era, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:12,]%>%
+  add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+
+betaP<-posterior[13:24,]%>%
+  add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+             period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+spring$region <-factor(spring$region, levels=region.lev) 
+scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+
+```
+
+Spring model plots
+
+```{r seasonalSPRINGplotsenso, echo=FALSE}
+ggplot(data = spring, aes(x = stand_bakun_seasonally, y =seasonal_ONI,col=period)) +
+    facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+
+ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+  theme_bw() +
+  facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+```
+
 
 
 ## Questions / Thoughts

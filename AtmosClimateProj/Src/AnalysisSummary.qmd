@@ -1,0 +1,102 @@
+---
+title: "Analysis Summary"
+format: html
+editor: visual
+---
+
+### Data Setup
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(ncdf4)
+library(chron)
+library(tidyverse)
+library(kohonen) # fitting
+library(aweSOM) # plotting
+library(SOMbrero) # plotting
+library(paletteer) #colors
+library(PNWColors) #more colors
+library(here) #navigating folders
+library(dplyr)
+library(nord)
+library(tidyr)
+library(sf)
+library(ggplot2)
+library(cowplot)
+library(Cairo)
+library(tidyverse)
+library(rstan)
+library(maps)       #basic mapping functions and some data
+library(mapdata)    #some additional hires data
+library(maptools)   #useful tools such as reading shapefiles
+library(mapproj)
+library(rgdal)
+library(colorspace)
+library(PBSmapping) 
+set.seed(1234)
+here::i_am("som/sst_soms_spring.qmd")
+```
+
+```{r loaddatacorr}
+#| echo: false
+#| warning: false
+#| message: false
+# start by loading output for correlation summary
+correlation <-readRDS(here('data/physical/correlation_analysis.rds'))
+```
+
+### Upwelling and Atmospheric Forcing
+
+Figure X: Correlations between regional upwelling (regions correspond Bakun indices described on map) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
+
+```{r sstcorrplot,fig.height = 9, fig.width =9}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_cor <- correlation%>%
+  filter(var=="SST")
+world <- st_as_sf(map('world2', plot=F, fill=T))
+ggplot() + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  geom_raster(data=sst_cor, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("Spring SST vs. Spring Regional Upwelling")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+ 
+
+```
+
+Figure X Interpretation: In the southern California Current and central California Current there is a strengthening between basin-wide SST patterns and upwelling. These spatial relationships resemble the PDO and indicate a potential strengthening of the the relationship between the PDO and upwelling in the CCC and SCC regions. Notably, in the 2013 - 2022 period CCC seems to be dominated more by and NPGO - like forcing pattern compared to the two earlier eras. In contrast, the relationship between basin-wide SST patterns and upwelling dynamics in the NCC demonstrate PDO-like patterns throughout time, but show a sign reversal in the 2013-2022 period indicating SST patterns that were previously conducive to upwelling conditions actually produce downwelling conditions in the most recent era. Similarly, the GOA showed evidence of PDO dominated relationship in the earliest era,but it appears to be somewhere between a PDO-NPGO pattern during the MHW era. 
+
+Altogether, the relationship between basin wide SST and upwelling has changed in the past decade which is likely due at least partially to global trends in SST (see SOM models). This, combined with the changing correlations between NPGO-PDO mean the interpretation of NPGO and PDO for upwelling conditions is also changing, and may not reflect these indices may not reflect the same ecologically important conditions that have been used in the past. 
+
+
+Figure Y: Correlations between sring regional upwelling (regions correspond Bakun indices described on map) and winter sea level pressure. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
+
+```{r slpcorrplot}
+#| echo: false
+#| warning: false
+#| message: false
+
+slp_cor <- correlation%>%
+  filter(var=="SLP")
+
+
+ggplot() + 
+  geom_raster(data=slp_cor, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
+   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("Winter SLP vs. Spring Regional Upwelling")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+ 
+
+```

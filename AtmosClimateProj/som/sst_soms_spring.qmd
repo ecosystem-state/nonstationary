@@ -32,7 +32,7 @@ here::i_am("som/sst_soms_spring.qmd")
 #| warning: false
 #| message: false
 # start by loading NE Pacific SST
-nc <- nc_open("copernicus_jun19.nc")
+nc <- nc_open("som/copernicus_jun27.nc")
 ```
 
 ```{r getcoords}
@@ -239,7 +239,8 @@ knitr::kable(output_cluster)
 
 output <- output%>%dplyr::left_join(output_cluster)
 
-
+ggplot(output, aes(spring_year, cluster)) + 
+  geom_point()
 ```
 
 ```{r}
@@ -336,6 +337,9 @@ output <- data.frame(spring_year = spring_years,
                      cluster = fit$clustering)
 
 knitr::kable(output)
+
+ggplot(output, aes(spring_year, cluster)) + 
+  geom_point()
 ```
 
 ```{r}

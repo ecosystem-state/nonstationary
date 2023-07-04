@@ -33,7 +33,8 @@ here::i_am("som/sst_soms_winter.qmd")
 #| message: false
 # start by loading NE Pacific SST
 #nc <- nc_open("copernicus_mar21.nc")
-nc <- nc_open("copernicus_jun19.nc")
+nc <- nc_open(here("som/copernicus_jun27.nc"))
+
 ```
 
 ```{r getcoords}
@@ -166,6 +167,8 @@ output <- data.frame(winter_year = winter_years,
                      cluster = fit$clustering)
 
 knitr::kable(output)
+ggplot(output, aes(winter_year, cluster)) + 
+  geom_point()
 ```
 
 ```{r}
@@ -235,7 +238,8 @@ plot(superClass(fit))
 sc <- superClass(fit, k = 4)
 output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster = sc$cluster)
 knitr::kable(output_cluster)
-
+ggplot(output, aes(winter_year, cluster)) + 
+  geom_point()
 
 ```
 
@@ -388,7 +392,8 @@ sc <- superClass(fit, k = 4)
 output_cluster <- data.frame(cluster = seq(1,length(sc$cluster)), super_cluster = sc$cluster)
 knitr::kable(output_cluster)
 output <- output%>%dplyr::left_join(output_cluster)
-
+ggplot(output, aes(winter_year, cluster)) + 
+  geom_point()
 ```
 
 

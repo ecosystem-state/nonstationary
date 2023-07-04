@@ -7,7 +7,7 @@ c.retrieve(
   {
     'product_type': 'monthly_averaged_reanalysis',
     'variable': [
-      'mean_sea_level_pressure', 'sea_surface_temperature',
+      'mean_sea_level_pressure', 'sea_surface_temperature','Northward_turbulent_surface_stress',
     ],
     'year': [
       '1940', '1941', '1942',
@@ -47,8 +47,8 @@ c.retrieve(
     ],
     'time': '00:00',
     'area': [
-      65, -180, 20,
-      -120,
+      0, -240, 65,
+      -110,
     ],
     'format': 'netcdf',
   },
