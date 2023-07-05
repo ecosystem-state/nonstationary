@@ -2,6 +2,8 @@
 title: "Analysis Summary"
 format: html
 editor: visual
+html_document:
+    toc: true
 ---
 
 ### Data Setup
@@ -35,8 +37,106 @@ library(mapproj)
 library(rgdal)
 library(colorspace)
 library(PBSmapping) 
+library(ggpubr) 
 set.seed(1234)
 here::i_am("som/sst_soms_spring.qmd")
+```
+
+```{r map, include=FALSE}
+
+col2<-pnw_palette("Sunset2",4,type="discrete")
+col<-pnw_palette("Sunset2",3,type="discrete")
+col3<-pnw_palette("Sunset2",8,type="continuous")
+
+col<-pnw_palette("Sunset2",3,type="discrete")
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+
+bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))%>%
+  mutate(longitude=longitude+360)
+sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
+agr = "constant")
+
+
+world <- st_as_sf(map('world2', plot=F, fill=T))
+
+map <- ggplot(data = world) +
+   annotate("rect",xmin = -117+360, xmax = -157+360, ymin = 50.5, ymax = 62, 
+     fill = col2[1], colour = col2[1], size = 0.8, alpha=0.5) +
+  annotate(geom = "text", x = -145+360, y = 55, label = "Gulf of Alaska", 
+     fontface = "italic", color = "grey22", size = 4) +
+  
+  annotate("rect",xmin = -140+360, xmax = -115+360, ymin = 40.4401, ymax = 50.5, 
+     fill = col2[2], colour = col2[2], size = 0.8, alpha=0.5) +
+  annotate(geom = "text", x = -134+360, y = 45, 
+    label = str_wrap("Northern California  Current", width = 5),
+    fontface = "italic", color = "grey22", size = 4) +
+   
+   annotate("rect", xmin= -140+360, xmax = -115+360, ymin = 34.4486, ymax = 40.4401, 
+     fill = col2[4], colour = col2[4], size = 0.8, alpha=0.5) +
+   annotate(geom = "text", x = -132+360, y = 37, 
+    label = str_wrap("Central California  Current", width = 20),
+    fontface = "italic", color = "grey22", size = 3.75) +
+  
+  annotate("rect", xmin= -140+360, xmax = -105+360, ymin = 22.1, ymax = 34.4486, 
+     fill = col2[3], colour = col2[3], size = 0.8, alpha=0.5) +
+  annotate(geom = "text", x = -129+360, y = 27, 
+    label = str_wrap("Southern California  Current", width = 5),
+    fontface = "italic", color = "grey22", size = 4) +
+  
+  geom_point(x=-160+360, y = 45,size = 3, shape = 23, col = "black", fill = col3[5])+
+  annotate(geom = "text", x = -152+360, y = 45, 
+    label = str_wrap("Bakun Index Location", width = 12),
+     color = "grey22", size = 4) +
+  geom_sf(fill='grey95') +
+  geom_sf(data = sites, size = 2, shape = 23, col = "black", fill = col3[5]) +
+     coord_sf(xlim = c(-165+360, -108+360), ylim = c(22, 62.5), expand = FALSE)+
+   scale_x_continuous(name = "") +
+   scale_y_continuous(name = "") +
+  theme(panel.background = element_rect(fill = "white"),
+     panel.border = element_rect(fill = NA))
+map
+
+```
+
+Figure 1: Distribution of upwelling data relative to regional delineations.
+
+```{r upwelling}
+map
+```
+
+Figure 2: Trends in upwelling through time by region. Spring upwelling model appears to have a 1988/1989 shift. Evidence for another shift are less pronounced. in the Northern CC 2022 actually appears to be anomalous, where it is pulling the the trend down that would normally be positive.
+
+```{r uptrend, echo=FALSE}
+
+season_dat <- climate_dat %>% pivot_longer(cols=c('seasonal_ONI', 'seasonal_PDO','seasonal_NPGO'),
+                    names_to='Index',
+                    values_to='values')
+
+annual_dat <- climate_dat %>% pivot_longer(cols=c('annual_ONI', 'annual_PDO','annual_NPGO'),
+                    names_to='Index',
+                    values_to='values')
+
+ggplot(data = climate_dat%>%filter(season=="Spring"), aes(x = Year_lag, y = stand_bakun_seasonally)) +
+    facet_wrap(.~region, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Average Spring Upwelling \n (Bakun 1˚ 6-hourly)") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
+
+
+```
+
+Figure 3: Trends in climate indices through through time. Evidence for a 1988/1989 PDO shift is not evident in ONI or NPGO. NPGO appaear to have a bigger changge in the past decade compared to the 1989/1988 shift.
+
+```{r indextrend, echo=FALSE}
+ggplot(data = season_dat%>%filter(season=="Spring"), aes(x = Year_lag, y = values)) +
+    facet_wrap(.~Index, ncol = 2, scales='free') +
+  geom_line(size=0.75)+
+  scale_y_continuous(name = "Spring Index") + 
+  scale_x_continuous(name = "Year") + 
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  theme_bw()
 ```
 
 ```{r loaddatacorr}
@@ -45,20 +145,35 @@ here::i_am("som/sst_soms_spring.qmd")
 #| message: false
 # start by loading output for correlation summary
 correlation <-readRDS(here('data/physical/correlation_analysis.rds'))
+SOM_data<-readRDS(here('data/physical/SOM_data.rds'))
+SOM_output<-readRDS(here('data/physical/SOM_output.rds'))
+
+SOM_output<-SOM_output%>%
+filter(year<1989)%>%
+  mutate(period='1')%>%
+  bind_rows(SOM_output%>%
+              filter(year>=1989 & year<2012)%>%
+              mutate(period='2'))%>%
+  bind_rows(SOM_output%>%
+              filter(year>=2012)%>%
+              mutate(period='3'))
+col<-pnw_palette("Sunset2",3,type="discrete")
+
 ```
 
 ### Upwelling and Atmospheric Forcing
 
-Figure X: Correlations between regional upwelling (regions correspond Bakun indices described on map) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
+This section includes correlation analysis to identify changes in the relationships between SST and SLP with regional upwelling indices.
 
-```{r sstcorrplot,fig.height = 9, fig.width =9}
+Figure 4: Correlations between regional upwelling (regions correspond Bakun indices described on map) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
+
+```{r sstcorrplot,fig.height = 11, fig.width =11}
 #| echo: false
 #| warning: false
 #| message: false
 
 sst_cor <- correlation%>%
   filter(var=="SST")
-world <- st_as_sf(map('world2', plot=F, fill=T))
 ggplot() + 
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
   coord_sf(xlim=c(120,240), ylim=c(0,60)) +
@@ -72,14 +187,13 @@ ggplot() +
 
 ```
 
-Figure X Interpretation: In the southern California Current and central California Current there is a strengthening between basin-wide SST patterns and upwelling. These spatial relationships resemble the PDO and indicate a potential strengthening of the the relationship between the PDO and upwelling in the CCC and SCC regions. Notably, in the 2013 - 2022 period CCC seems to be dominated more by and NPGO - like forcing pattern compared to the two earlier eras. In contrast, the relationship between basin-wide SST patterns and upwelling dynamics in the NCC demonstrate PDO-like patterns throughout time, but show a sign reversal in the 2013-2022 period indicating SST patterns that were previously conducive to upwelling conditions actually produce downwelling conditions in the most recent era. Similarly, the GOA showed evidence of PDO dominated relationship in the earliest era,but it appears to be somewhere between a PDO-NPGO pattern during the MHW era. 
+Figure 5 Interpretation: In the southern California Current and central California Current there is a strengthening between basin-wide SST patterns and upwelling. These spatial relationships resemble the PDO and indicate a potential strengthening of the the relationship between the PDO and upwelling in the CCC and SCC regions. Notably, in the 2013 - 2022 period CCC seems to be dominated more by and NPGO - like forcing pattern compared to the two earlier eras. In contrast, the relationship between basin-wide SST patterns and upwelling dynamics in the NCC demonstrate PDO-like patterns throughout time, but show a sign reversal in the 2013-2022 period indicating SST patterns that were previously conducive to upwelling conditions actually produce downwelling conditions in the most recent era. Similarly, the GOA showed evidence of PDO dominated relationship in the earliest era,but it appears to be somewhere between a PDO-NPGO pattern during the MHW era.
 
-Altogether, the relationship between basin wide SST and upwelling has changed in the past decade which is likely due at least partially to global trends in SST (see SOM models). This, combined with the changing correlations between NPGO-PDO mean the interpretation of NPGO and PDO for upwelling conditions is also changing, and may not reflect these indices may not reflect the same ecologically important conditions that have been used in the past. 
+Altogether, the relationship between basin wide SST and upwelling has changed in the past decade which is likely due at least partially to global trends in SST (see SOM models). This, combined with the changing correlations between NPGO-PDO mean the interpretation of NPGO and PDO for upwelling conditions is also changing, and may not reflect these indices may not reflect the same ecologically important conditions that have been used in the past.
 
+Figure 6: Correlations between sring regional upwelling (regions correspond Bakun indices described on map) and winter sea level pressure. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
 
-Figure Y: Correlations between sring regional upwelling (regions correspond Bakun indices described on map) and winter sea level pressure. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.
-
-```{r slpcorrplot}
+```{r slpcorrplot, fig.height = 11, fig.width =11}
 #| echo: false
 #| warning: false
 #| message: false
@@ -99,4 +213,165 @@ ggplot() +
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
  
 
+```
+
+### Self-organizing maps
+
+This analysis identifis dominant spatial patterns in SLP and SST.
+
+Figure 7: Dominant spatial patterns in Spring (April - June) of North Pacific SSt anomalies from 1940 - 2023 with the global trend included. Node 6 only occurs after 1996 and almost exclusively during the marine heat wave era. Nodes 1 and 5 only occurred before 1996.
+
+```{r, fig.height = 6, fig.width =12}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_som <- SOM_data%>%
+  filter(var=="SST_spring")%>%
+  mutate(long=long+360)
+
+sst_out <- SOM_output%>%
+  filter(var=="SST_spring")
+
+nodes <- ggplot() + 
+  geom_raster(data=sst_som, aes(long, lat,fill = mean)) + 
+  facet_wrap(~cluster) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+output <-ggplot(sst_out, aes(year, cluster)) + 
+  geom_point(aes(col=as.factor(period)))+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))
+
+nodes
+
+```
+
+```{r, fig.height = 3, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+
+output <-ggplot(sst_out, aes(year, cluster)) + 
+  geom_point(aes(col=as.factor(period)))+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))
+
+output
+
+
+```
+
+Figure 8: Dominant spatial patterns in Spring (April - June) of North Pacific SSt anomalies from 1940 - 2023 with the global trend removed. Altogether this illustrates that the recent patterns observed during the MHW era are predominantly driven by global trends in SST and in the absence of that trend spatial patterns in SST resemble common trends observed historically, particularly nodes 5 and 2 which are a classic PDO pattern.
+
+```{r, fig.height = 6, fig.width =12}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_som <- SOM_data%>%
+  filter(var=="SST_spring_detrended")%>%
+  mutate(long=long+360)
+
+sst_out <- SOM_output%>%
+  filter(var=="SST_spring_detrended")
+
+nodes <- ggplot() + 
+  geom_raster(data=sst_som, aes(long, lat,fill = mean)) + 
+  facet_wrap(~cluster) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+nodes
+
+```
+
+```{r, fig.height = 3, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+
+output <-ggplot(sst_out, aes(year, cluster)) + 
+  geom_point(aes(col=as.factor(period)))+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))
+
+output
+```
+
+Figure 9: Dominant spatial patterns in Winter (November - March) of North Pacific SLP anomalies from 1940 - 2023 with the global trend included. There are no dominant patterns through time, but spatial patterns that reflect PDO and NPGO forcing are not evident.
+
+```{r, fig.height = 6, fig.width =12}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_som <- SOM_data%>%
+  filter(var=="SLP_winter")%>%
+  mutate(long=long+360)
+
+sst_out <- SOM_output%>%
+  filter(var=="SLP_winter")
+
+nodes <- ggplot() + 
+  geom_raster(data=sst_som, aes(long, lat,fill = mean)) + 
+  facet_wrap(~cluster) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+nodes
+
+```
+
+```{r, fig.height = 3, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+
+output <-ggplot(sst_out, aes(year, cluster)) + 
+  geom_point(aes(col=as.factor(period)))+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))
+
+output
+```
+
+Figure 10: Dominant spatial patterns in Winter (November - March) of North Pacific SLP anomalies from 1940 - 2023 with the global trend removed. Removal of the global trend uncovers more PDO (nodes 1 and 6) and NPGO (nodes 3,4,5) forcing patterns. There are not dominant forcing patterns during the marine heat wave era.
+
+```{r, fig.height = 6, fig.width =12}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_som <- SOM_data%>%
+  filter(var=="SLP_winter_detrended")%>%
+  mutate(long=long+360)
+
+sst_out <- SOM_output%>%
+  filter(var=="SLP_winter_detrended")
+
+nodes <- ggplot() + 
+  geom_raster(data=sst_som, aes(long, lat,fill = mean)) + 
+  facet_wrap(~cluster) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  xlab("Lon") + 
+  ylab("Lat")
+
+nodes
+
+```
+
+```{r, fig.height = 3, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+
+output <-ggplot(sst_out, aes(year, cluster)) + 
+  geom_point(aes(col=as.factor(period)))+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))
+
+output
 ```

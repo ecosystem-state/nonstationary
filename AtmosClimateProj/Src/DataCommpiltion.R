@@ -89,17 +89,21 @@ bakun_summ_annual <- bakun_season%>%
   group_by(region, Year_lag) %>%
   summarise(annual_mean = mean(na.omit(upwelling_index)))%>%
   ungroup()%>%
-  right_join(bakun_summ_annual2, by = c( 'region'))%>%
-  mutate(stand_bakun_annual = (annual_mean-yearly_mean)/yearly_sd)%>%
+  group_by(region)%>%
+  mutate(mean = mean(annual_mean), sd=sd(annual_mean))%>%
+  ungroup()%>%
+  mutate(stand_bakun_annual = (annual_mean-mean)/sd)%>%
   select(Year_lag, region,stand_bakun_annual)
 
 bakun_summ_seasonal <- bakun_season%>%
   group_by(region, Year_lag,  season) %>%
   summarise(season_mean = mean(na.omit(upwelling_index)))%>%
   ungroup()%>%
-  right_join(bakun_summ_season2, by = c('season', 'region'))%>%
-  mutate(stand_bakun_seasonally = (season_mean-seasonal_mean)/seasonal_sd)%>%
-  select(season,Year_lag, region,stand_bakun_seasonally)
+  group_by(region, season)%>%
+  mutate(mean = mean(season_mean), sd=sd(season_mean))%>%
+  ungroup()%>%
+  mutate(stand_bakun_seasonally = (season_mean-mean)/sd)%>%
+  select(Year_lag, season, region,stand_bakun_seasonally)
 
 bakun_summ<- bakun_season%>%
   group_by(Month, region, Year_lag) %>%
@@ -118,7 +122,7 @@ bakun_time <-bakun_summ%>%
   filter(Year_lag>1963 & Year_lag<1989)%>%
   mutate(period='1')%>%
   bind_rows(bakun_summ%>%
-              filter(Year_lag>1989 & Year_lag<2014)%>%
+              filter(Year_lag>=1989 & Year_lag<2014)%>%
               mutate(period='2'))%>%
   bind_rows(bakun_summ%>%
               filter(Year_lag>2013)%>%
@@ -227,8 +231,8 @@ climate_dat <- bakun_time%>%
 
 
 climate_dat <- climate_dat%>%
-  select(Year_lag, region, season, seasonal_mean, stand_bakun_annual,period, 
-         era.region,annual_PDO, seasonal_PDO, seasonal_NPGO, seasonal_ONI)%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, 
+         era.region,annual_PDO, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI)%>%
   distinct()%>%
   filter(Year_lag<2023)
 
@@ -247,10 +251,10 @@ climate_dat <-climate_dat%>%
 filter(Year_lag<1989)%>%
   mutate(period='1')%>%
   bind_rows(climate_dat%>%
-              filter(Year_lag>1989 & Year_lag<2012)%>%
+              filter(Year_lag>=1989 & Year_lag<2012)%>%
               mutate(period='2'))%>%
   bind_rows(climate_dat%>%
-              filter(Year_lag>2012)%>%
+              filter(Year_lag>=2012)%>%
               mutate(period='3'))
 
 climate_dat <-climate_dat%>%  
@@ -267,3 +271,4 @@ ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_ONI))+
   geom_point()
 
 saveRDS(climate_dat, file = here('data/physical/climate_dat.rds'))
+

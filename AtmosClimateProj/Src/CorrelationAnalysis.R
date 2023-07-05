@@ -170,7 +170,7 @@ X_cc<- as.data.frame(cc.regr1)%>%
   #cbind(as.data.frame(ncc.diff))%>%
   #cbind(as.data.frame(scc.diff))%>%
   #cbind(as.data.frame(goa.diff))%>%
-  rename('CC 1967 - 1988' = cc.regr1, 'NCC 1967 - 1988' = ncc.regr1,'SCC 1967 - 1988' = scc.regr1,  'GoA 1967 - 1988' = goa.regr1,'CC 1989 - 2012' = cc.regr2, 'NCC 1989 - 2012' = ncc.regr2,'SCC 1989 - 2012' = scc.regr2,  'GoA 1989 - 2012' = goa.regr2, 'CC 2013 - 2022' = cc.regr3, 'NCC 2013 - 2022' = ncc.regr3,'SCC 2013 - 2022' = scc.regr3,  'GoA 2013 - 2022' = goa.regr3)
+  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
 
 X_cc$latitude <- spring_lat 
 X_cc$longitude <- spring_lon+360
@@ -181,10 +181,10 @@ X_cc<- X_cc%>%
 world <- st_as_sf(map('world2', plot=F, fill=T)) #base layer for land masses
 #plot code
 ggplot() + 
+  geom_raster(data=X_cc, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
   coord_sf(xlim=c(120,240), ylim=c(0,60)) +
-  geom_raster(data=X_cc, aes(x=longitude,y=latitude,fill = coefficient)) + 
-  #facet_wrap(~analysis, ncol = 3) + 
   scale_fill_gradient2(low = "blue", high = "red") + 
   ggtitle("SST")+
   #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
@@ -314,7 +314,7 @@ X_cc_slp<- as.data.frame(cc.regr1)%>%
   #cbind(as.data.frame(ncc.diff))%>%
   #cbind(as.data.frame(scc.diff))%>%
   #cbind(as.data.frame(goa.diff))%>%
-  rename('CC 1967 - 1988' = cc.regr1, 'NCC 1967 - 1988' = ncc.regr1,'SCC 1967 - 1988' = scc.regr1,  'GoA 1967 - 1988' = goa.regr1,'CC 1989 - 2012' = cc.regr2, 'NCC 1989 - 2012' = ncc.regr2,'SCC 1989 - 2012' = scc.regr2,  'GoA 1989 - 2012' = goa.regr2, 'CC 2013 - 2022' = cc.regr3, 'NCC 2013 - 2022' = ncc.regr3,'SCC 2013 - 2022' = scc.regr3,  'GoA 2013 - 2022' = goa.regr3)
+  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
 
 X_cc_slp$latitude <- winter_lat 
 X_cc_slp$longitude <- winter_lon+360

@@ -243,7 +243,6 @@ ggplot(output, aes(winter_year, cluster)) +
 
 ```
 
-
 ```{r}
 #| echo: false
 #| warning: false
@@ -395,7 +394,6 @@ output <- output%>%dplyr::left_join(output_cluster)
 ggplot(output, aes(winter_year, cluster)) + 
   geom_point()
 ```
-
 
 ```{r}
 #| echo: false

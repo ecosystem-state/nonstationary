@@ -401,7 +401,6 @@ ggplot(output, aes(spring_year, cluster)) +
   geom_point()
 ```
 
-
 ```{r}
 #| echo: false
 #| warning: false
