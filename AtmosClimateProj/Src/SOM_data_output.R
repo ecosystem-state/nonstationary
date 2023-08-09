@@ -1,4 +1,4 @@
-nc <- nc_open(here("som/copernicus_jun27.nc"))
+nc <- nc_open(here("som/copernicus_jul10.nc"))
 
 #### Winter SLP ####
 x <- ncvar_get(nc, "longitude")

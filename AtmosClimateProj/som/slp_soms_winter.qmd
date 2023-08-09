@@ -405,7 +405,6 @@ ggplot(output, aes(winter_year, cluster)) +
   geom_point()
 ```
 
-
 ```{r}
 #| echo: false
 #| warning: false

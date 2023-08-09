@@ -136,7 +136,8 @@ bakundat <-read.csv(here('data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>
 bakun <- bakundat%>%
 add_column('Year'=as.numeric(format(as.Date(bakundat$time),"%Y")))%>%
 add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
-add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
+add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))%>%
+add_column("YearDay"=as.numeric(yday(format(as.Date(bakundat$time)))))
 
 bakun_region <- bakun%>%
   filter(station_id=='36N'|station_id=='39N')%>%
@@ -152,6 +153,53 @@ bind_rows(bakun%>%
   mutate(region="GoA"))
 
 
+```
+
+```{r dates, include=FALSE}
+#col3<-pnw_palette("Sunset2",57,type="continuous")
+
+bakun_daily <- bakun_region%>%
+  group_by( station_id,Year, YearDay,region)%>%
+  summarise(upwelling_index_sum = mean(na.omit(upwelling_index)))
+
+bakun_cum <- bakun_daily%>%
+  group_by(station_id,Year,region)%>%
+  reframe(upwelling_index_cum = cumsum(upwelling_index_sum))%>%
+  add_column(YearDay=bakun_daily$YearDay)
+period2=data.frame(period2=c('1967 - 1988', '1989 - 2013', '2014 - 2022'), period=c('1','2','3'))
+
+bakun_time <-bakun_cum%>%
+  filter(Year>1963 & Year<1989)%>%
+  mutate(period='1')%>%
+bind_rows(bakun_cum%>%
+  filter(Year>1989 & Year<2014)%>%
+  mutate(period='2'))%>%
+bind_rows(bakun_cum%>%
+  filter(Year>2013)%>%
+  mutate(period='3'))%>%
+left_join(period2)
+
+
+bakun_time[which.min(bakun_time$upwelling_index_cum),]
+
+ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum, col=Year)) +
+    facet_wrap(.~station_id, ncol = 3, scales='free') +
+  geom_line(size=0.75,aes(group=as.numeric(Year))) +
+# geom_smooth(col='red',aes(group=period)) +
+  #scale_x_continuous(name = "Day") +
+  #scale_color_manual(values=col3)+
+  theme_bw()
+
+bakun_time[which.min(bakun_time$upwelling_index_cum),]
+
+ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum)) +
+    facet_wrap(.~station_id, ncol = 3, scales='free') +
+#  ggtitle(paste(bakun_time$station_id, "/n", bakun_time$region))+
+  geom_line(size=0.75,aes(group=as.numeric(Year)),col='grey') +
+ geom_smooth(aes(group=period2, colour=period2)) +
+  #scale_x_continuous(name = "Day") +
+  scale_color_manual(values=col[1:3])+
+  theme_bw()
 ```
 
 2) Test covariation and correlation between station 51N and 48N/54N. Station 51N covaries more with both stations 54N and 57N (GoA) compared to 48N (Northern CC) and I elected to include it in the GoA  
@@ -280,10 +328,11 @@ PDO_seasonal <-  PDO%>%
   filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
   mutate(season="Winter")%>%
 bind_rows(PDO%>%
-  filter(Month==4|Month==5|Month==6)%>%
+ filter(Month==4)%>%
+  #filter(Month==4|Month==5|Month==6)%>%
   mutate(season="Spring"))%>%
 bind_rows(PDO%>%
-  filter(Month==7|Month==8)%>%
+  filter(Month==6|Month==7|Month==8)%>%
   mutate(season="Summer"))%>%
   mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
   group_by(Year_lag, season)%>%
@@ -305,7 +354,7 @@ bind_rows(NPGO%>%
   filter(Month==4|Month==5|Month==6)%>%
   mutate(season="Spring"))%>%
 bind_rows(NPGO%>%
-  filter(Month==7|Month==8)%>%
+  filter(Month==6|Month==7|Month==8)%>%
   mutate(season="Summer"))%>%
   mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
   group_by(Year_lag, season)%>%
@@ -685,7 +734,7 @@ Using monthly mean data through winter months (July - August) where data is stan
 ```{r summSUMMER, include=FALSE}
 
 climate <- climate_dat%>%
-  filter(Month==7| Month==8)#saveRDS(climate, file = here('Output/standat.rds'))
+  filter(Month==7|Month==8)#saveRDS(climate, file = here('Output/standat.rds'))
 
 N <- length(climate$period)
 NP <- 12
@@ -1168,7 +1217,7 @@ scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2)
 
 Summer seasonal plots
 
-```{r seasonalSUMMplots, echo=FALSE, include= FALSE}
+```{r seasonalSUMMplots, echo=FALSE}
 ggplot(data = winter, aes(x = stand_bakun_seasonally, y = seasonal_PDO,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
   geom_point(size=0.75,aes(col=period)) +

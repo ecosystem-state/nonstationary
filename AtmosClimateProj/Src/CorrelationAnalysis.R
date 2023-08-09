@@ -13,7 +13,9 @@ here::i_am("som/sst_soms_spring.r")
 #### Importing data ####
 
 # start by loading NE Pacific SST/SLP - this may need to be moved into project if not locally stored
-nc <- nc_open(here("som/copernicus_jun27.nc"))
+nc <- nc_open(here("som/copernicus_jul10.nc"))
+nc.wind <- nc_open(here("som/copernicus_jul10_wind.nc"))
+ 
 
 # get lat/long
 x <- ncvar_get(nc, "longitude")
@@ -59,8 +61,22 @@ for(i in 1:length(spring_years)) {
   X_spring[i,] = colMeans(X[which(dates$spring_year == spring_years[i]),])
 }
 
+# remove annual mean for each year
+for(i in 1:nrow(X_spring)) {
+  X_spring[i,] = X_spring[i,] - mean(X_spring[i,], na.rm=T)
+}
+X_spring <- scale(X_spring)
+
+
+sst_anomaly <- matrix(NA, length(spring_years), ncol(X))
+mean_sst <- apply(X_spring,2,mean)
+sd_sst <- apply(X_spring,2,sd)
+for(i in 1:ncol(X)) {
+  sst_anomaly[,i] = (X_spring[,i]-mean_sst[i])
+}
 #assigning names to time allows you to divide data by ERA
-dimnames(X_spring) <- list(as.character(spring_years),paste("N", spring_lat, "E", spring_lon, sep=""))
+
+dimnames(sst_anomaly) <- list(as.character(spring_years),paste("N", spring_lat, "E", spring_lon, sep=""))
 
 
 climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
@@ -81,25 +97,25 @@ GoA.FMA <- climate_dat%>% filter(season=='Spring'&region=='GoA')%>%
   select(Year_lag, stand_bakun_seasonally) 
 rownames(GoA.FMA)<- GoA.FMA$Year_lag
 
-SST1 <- X_spring[rownames(X_spring) %in% 1967:1988,] 
-SST2 <- X_spring[rownames(X_spring) %in% 1989:2012,]
-SST3 <- X_spring[rownames(X_spring) %in% 2013:2022,]
+SST1 <- sst_anomaly[rownames(sst_anomaly) %in% 1967:1988,] 
+SST2 <- sst_anomaly[rownames(sst_anomaly) %in% 1989:2012,]
+SST3 <- sst_anomaly[rownames(sst_anomaly) %in% 2013:2021,]
 
 CC1 <- CC.FMA[rownames(CC.FMA) %in% 1967:1988, 'stand_bakun_seasonally'] 
 CC2 <- CC.FMA[rownames(CC.FMA) %in% 1989:2012, 'stand_bakun_seasonally']
-CC3 <- CC.FMA[rownames(CC.FMA) %in% 2013:2022, 'stand_bakun_seasonally']
+CC3 <- CC.FMA[rownames(CC.FMA) %in% 2013:2021, 'stand_bakun_seasonally']
 
 NCC1 <- NCC.FMA[rownames(NCC.FMA) %in% 1967:1988, 'stand_bakun_seasonally'] 
 NCC2 <- NCC.FMA[rownames(NCC.FMA) %in% 1989:2012, 'stand_bakun_seasonally']
-NCC3 <- NCC.FMA[rownames(NCC.FMA) %in% 2013:2022, 'stand_bakun_seasonally']
+NCC3 <- NCC.FMA[rownames(NCC.FMA) %in% 2013:2021, 'stand_bakun_seasonally']
 
 SCC1 <- SCC.FMA[rownames(SCC.FMA) %in% 1967:1988, 'stand_bakun_seasonally'] 
 SCC2 <- SCC.FMA[rownames(SCC.FMA) %in% 1989:2012, 'stand_bakun_seasonally']
-SCC3 <- SCC.FMA[rownames(SCC.FMA) %in% 2013:2022, 'stand_bakun_seasonally']
+SCC3 <- SCC.FMA[rownames(SCC.FMA) %in% 2013:2021, 'stand_bakun_seasonally']
 
 GoA1 <- GoA.FMA[rownames(GoA.FMA) %in% 1967:1988, 'stand_bakun_seasonally'] 
 GoA2 <- GoA.FMA[rownames(GoA.FMA) %in% 1989:2012, 'stand_bakun_seasonally']
-GoA3 <- GoA.FMA[rownames(GoA.FMA) %in% 2013:2022, 'stand_bakun_seasonally']
+GoA3 <- GoA.FMA[rownames(GoA.FMA) %in% 2013:2021, 'stand_bakun_seasonally']
 
 # calculate separate regressions in each era!
 
@@ -170,7 +186,7 @@ X_cc<- as.data.frame(cc.regr1)%>%
   #cbind(as.data.frame(ncc.diff))%>%
   #cbind(as.data.frame(scc.diff))%>%
   #cbind(as.data.frame(goa.diff))%>%
-  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
+  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2021' = cc.regr3, 'F. NCC 2013 - 2021' = ncc.regr3,'L. SCC 2013 - 2021' = scc.regr3,  'C. GoA 2013 - 2021' = goa.regr3)
 
 X_cc$latitude <- spring_lat 
 X_cc$longitude <- spring_lon+360
@@ -190,6 +206,8 @@ ggplot() +
   #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 
+
+
 #### Now SLP ####
 
 # get lat/long
@@ -205,8 +223,8 @@ dates <- RNetCDF::utcal.nc("hours since 1900-01-01 00:00:00.0", raw)
 dates <- as.data.frame(dates[,c("year","month")])
 dates$index <- seq(1, nrow(dates))
 dates$winter_year <- dates$year
-dates$winter_year[which(dates$month %in% 4:10)] <- NA
-dates$winter_year[which(dates$month %in% 11:12)] <- dates$winter_year[which(dates$month %in% 11:12)] + 1 # incremenent 
+dates$winter_year[which(dates$month %in% 7:12)] <- NA
+dates$winter_year[which(dates$month %in% 1:3)] <- NA
 
 var_name = "msl"
 
@@ -238,13 +256,29 @@ for(i in 1:length(winter_years)) {
   X_winter[i,] = colMeans(X[which(dates$winter_year == winter_years[i]),])
 }
 dim(X_winter)
-
 dimnames(X_winter) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
 
+# remove annual mean for each year
+for(i in 1:nrow(X_winter)) {
+  X_winter[i,] = X_winter[i,] - mean(X_winter[i,], na.rm=T)
+}
+X_winter <- scale(X_winter)
 
-SLP1 <- X_winter[rownames(X_winter) %in% 1967:1988,] 
-SLP2 <- X_winter[rownames(X_winter) %in% 1989:2012,]
-SLP3 <- X_winter[rownames(X_winter) %in% 2013:2022,]
+
+#X_winter<- X_winter/100
+slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
+mean_slp <- apply(X_winter,2,mean)
+sd_slp <- apply(X_winter,2,sd)
+for(i in 1:ncol(X)) {
+  slp_anomaly[,i] = (X_winter[,i]-mean_slp[i])
+}
+
+dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
+dim(slp_anomaly)
+
+SLP1 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
+SLP2 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
+SLP3 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2022,]
 
 
 # make objects to catch results
@@ -298,7 +332,7 @@ scc.diff <- scc.regr2 - scc.regr1
 goa.diff <- goa.regr2 - goa.regr1
 #diff.lim <- range(pdo.diff, npgo.diff) # limit for plotting
 
-X_cc_slp<- as.data.frame(cc.regr1)%>%
+anomalyst_cc_slp<- as.data.frame(cc.regr1)%>%
   cbind(as.data.frame(cc.regr2))%>%
   cbind(as.data.frame(cc.regr3))%>%
   cbind(as.data.frame(ncc.regr1))%>%
@@ -316,33 +350,298 @@ X_cc_slp<- as.data.frame(cc.regr1)%>%
   #cbind(as.data.frame(goa.diff))%>%
   rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
 
-X_cc_slp$latitude <- winter_lat 
-X_cc_slp$longitude <- winter_lon+360
+anomalyst_cc_slp$latitude <- winter_lat 
+anomalyst_cc_slp$longitude <- winter_lon+360
 
-X_cc_slp<- X_cc_slp%>%  
+anomaly_cc_slp<- anomalyst_cc_slp%>%  
   pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
 
-
-
-
-world <- st_as_sf(map('world2', plot=F, fill=T))
+world <- st_as_sf(map('world2', plot=F, fill=T)) #base layer for land masses
+#plot code
 ggplot() + 
-  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
-  coord_sf(xlim=c(120,240), ylim=c(0,60)) +
-  geom_raster(data=X_cc_slp, aes(x=longitude,y=latitude,fill = coefficient)) + 
-  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  geom_raster(data=anomalyst_cc_slp, aes(x=longitude,y=latitude,fill = coefficient)) + 
   facet_wrap(~analysis, ncol = 3) + 
-  scale_fill_gradient2(low = "blue", high = "red") + 
-  ggtitle("Winter SLP vs. Spring Regional Upwelling")+
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
   coord_sf(xlim=c(120,240), ylim=c(0,60)) +
-  # geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("SST")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+
 
 ##### Data output for analysis summary qmd ####
 
 cor_cc <- X_cc%>%
   mutate(var = 'SST')%>%
-  rbind(X_cc_slp%>%mutate(var='SLP'))
+  rbind(anomalyst_cc_slp%>%mutate(var='SLP'))
 
 saveRDS(cor_cc, file = here('data/physical/correlation_analysis.rds'))
+
+
+
+
+
+
+#### uwind Analysis ####
+# get lat/long
+x <- ncvar_get(nc.wind, "longitude")
+y <- ncvar_get(nc.wind, "latitude")
+lat <- rep(y, length(x))   # Vector of latitudes
+lon <- rep(x, each = length(y))   # Vector of longitudes
+
+
+# get times and 
+raw <- ncvar_get(nc.wind, "time")
+tunits<-ncatt_get(nc.wind,"time",attname="units")
+tustr<-strsplit(tunits$value, " ")
+dates <- RNetCDF::utcal.nc("hours since 1900-01-01 00:00:00.0", raw)
+dates <- as.data.frame(dates[,c("year","month")])
+dates$index <- seq(1, nrow(dates))
+dates$spring_year <- dates$year
+dates$spring_year[which(dates$month %in% 7:12)] <- NA
+dates$spring_year[which(dates$month %in% 1:3)] <- NA # incremenent 
+
+var_name = "u10"
+
+tmp_array <- ncvar_get(nc.wind,var_name)
+dlname <- ncatt_get(nc.wind,var_name,"long_name")
+dunits <- ncatt_get(nc.wind,var_name,"units")
+fillvalue <- ncatt_get(nc.wind,var_name,"_FillValue")
+# replace netCDF fill values with NA's
+tmp_array[tmp_array==fillvalue$value] <- NA
+# The 1st dimension of X is lon, 2nd dimension is lat, 3rd dimension is is ERA vesion, 4th dimension is date. But the array needs to be flattened (time on rows, spatial cells on columns) for easier use.
+Z <- tmp_array[,,1,]
+
+Z <- aperm(Z, 3:1) # transpose array # X
+Z <- matrix(Z, nrow=dim(Z)[1], ncol=prod(dim(Z)[2:3])) # months in rows, cells in columns! 
+Q<- replace_na(Z, 0) # replacing the missing data with 0s
+
+# Add block for spring average calculations
+spring_years <- unique(dates$spring_year)
+spring_years <- sort(spring_years[-which(is.na(spring_years))])
+X_spring <- matrix(NA, length(spring_years), ncol(Q))
+for(i in 1:length(spring_years)) {
+  X_spring[i,] = colMeans(Q[which(dates$spring_year == spring_years[i]),])
+}
+
+#assigning names to time allows you to divide data by ERA
+dimnames(X_spring) <- list(as.character(spring_years),paste("N",lat, "E", lon, sep=""))
+
+v1 <- X_spring[rownames(X_spring) %in% 1967:1988,] 
+v2 <- X_spring[rownames(X_spring) %in% 1989:2012,]
+v3 <- X_spring[rownames(X_spring) %in% 2013:2022,]
+
+
+# make objects to catch results
+cc.regr1 <- cc.regr2<- cc.regr3 <- ncc.regr1 <- ncc.regr2<- ncc.regr3<-scc.regr1 <- scc.regr2<- scc.regr3<- goa.regr1 <- goa.regr2 <- goa.regr3<- NA
+
+# now loop through each cell
+
+for(i in 1:ncol(v1)){
+  #  i <- 1
+  mod <- lm(v1[,i] ~ CC1)
+  cc.regr1[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v2[,i] ~ CC2)
+  cc.regr2[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v3[,i] ~ CC3)
+  cc.regr3[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v1[,i] ~ NCC1)
+  ncc.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ NCC2)
+  ncc.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ NCC3)
+  ncc.regr3[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v1[,i] ~ SCC1)
+  scc.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ SCC2)
+  scc.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ SCC3)
+  scc.regr3[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v1[,i] ~ GoA1)
+  goa.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ GoA2)
+  goa.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ GoA3)
+  goa.regr3[i] <- summary(mod)$coef[2,1]
+}
+# calculate era differences for each cell
+
+cc.diff <- cc.regr2 - cc.regr1 
+ncc.diff <- ncc.regr2 - ncc.regr1 
+scc.diff <- scc.regr2 - scc.regr1 
+goa.diff <- goa.regr2 - goa.regr1
+#diff.lim <- range(pdo.diff, npgo.diff) # limit for plotting
+
+X_cc_u<- as.data.frame(cc.regr1)%>%
+  cbind(as.data.frame(cc.regr2))%>%
+  cbind(as.data.frame(cc.regr3))%>%
+  cbind(as.data.frame(ncc.regr1))%>%
+  cbind(as.data.frame(scc.regr2))%>%
+  cbind(as.data.frame(scc.regr3))%>%
+  cbind(as.data.frame(scc.regr1))%>%
+  cbind(as.data.frame(goa.regr2))%>%
+  cbind(as.data.frame(goa.regr3))%>%
+  cbind(as.data.frame(goa.regr1))%>%
+  cbind(as.data.frame(ncc.regr2))%>%
+  cbind(as.data.frame(ncc.regr3))%>%
+  #cbind(as.data.frame(cc.diff))%>%
+  #cbind(as.data.frame(ncc.diff))%>%
+  #cbind(as.data.frame(scc.diff))%>%
+  #cbind(as.data.frame(goa.diff))%>%
+  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
+
+X_cc_u$latitude <- lat 
+X_cc_u$longitude <- lon+360
+
+X_cc_u<- X_cc_u%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
+
+
+#### vwind Analysis ####
+# get lat/long
+x <- ncvar_get(nc.wind, "longitude")
+y <- ncvar_get(nc.wind, "latitude")
+lat <- rep(y, length(x))   # Vector of latitudes
+lon <- rep(x, each = length(y))   # Vector of longitudes
+
+
+# get times and 
+raw <- ncvar_get(nc.wind, "time")
+tunits<-ncatt_get(nc.wind,"time",attname="units")
+tustr<-strsplit(tunits$value, " ")
+dates <- RNetCDF::utcal.nc("hours since 1900-01-01 00:00:00.0", raw)
+dates <- as.data.frame(dates[,c("year","month")])
+dates$index <- seq(1, nrow(dates))
+dates$spring_year <- dates$year
+dates$spring_year[which(dates$month %in% 7:12)] <- NA
+dates$spring_year[which(dates$month %in% 1:3)] <- NA # incremenent 
+
+var_name = "v10"
+
+tmp_array <- ncvar_get(nc.wind,var_name)
+dlname <- ncatt_get(nc.wind,var_name,"long_name")
+dunits <- ncatt_get(nc.wind,var_name,"units")
+fillvalue <- ncatt_get(nc.wind,var_name,"_FillValue")
+# replace netCDF fill values with NA's
+tmp_array[tmp_array==fillvalue$value] <- NA
+# The 1st dimension of X is lon, 2nd dimension is lat, 3rd dimension is is ERA vesion, 4th dimension is date. But the array needs to be flattened (time on rows, spatial cells on columns) for easier use.
+Z <- tmp_array[,,1,]
+
+Z <- aperm(Z, 3:1) # transpose array # X
+Z <- matrix(Z, nrow=dim(Z)[1], ncol=prod(dim(Z)[2:3])) # months in rows, cells in columns! 
+Q<- replace_na(Z, 0) # replacing the missing data with 0s
+
+# Add block for spring average calculations
+spring_years <- unique(dates$spring_year)
+spring_years <- sort(spring_years[-which(is.na(spring_years))])
+X_spring <- matrix(NA, length(spring_years), ncol(Q))
+for(i in 1:length(spring_years)) {
+  X_spring[i,] = colMeans(Q[which(dates$spring_year == spring_years[i]),])
+}
+
+#assigning names to time allows you to divide data by ERA
+dimnames(X_spring) <- list(as.character(spring_years),paste("N",lat, "E", lon, sep=""))
+
+v1 <- X_spring[rownames(X_spring) %in% 1967:1988,] 
+v2 <- X_spring[rownames(X_spring) %in% 1989:2012,]
+v3 <- X_spring[rownames(X_spring) %in% 2013:2022,]
+
+
+# make objects to catch results
+cc.regr1 <- cc.regr2<- cc.regr3 <- ncc.regr1 <- ncc.regr2<- ncc.regr3<-scc.regr1 <- scc.regr2<- scc.regr3<- goa.regr1 <- goa.regr2 <- goa.regr3<- NA
+
+# now loop through each cell
+
+for(i in 1:ncol(v1)){
+  #  i <- 1
+  mod <- lm(v1[,i] ~ CC1)
+  cc.regr1[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v2[,i] ~ CC2)
+  cc.regr2[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v3[,i] ~ CC3)
+  cc.regr3[i] <- summary(mod)$coef[2,1]
+  
+  mod <- lm(v1[,i] ~ NCC1)
+  ncc.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ NCC2)
+  ncc.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ NCC3)
+  ncc.regr3[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v1[,i] ~ SCC1)
+  scc.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ SCC2)
+  scc.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ SCC3)
+  scc.regr3[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v1[,i] ~ GoA1)
+  goa.regr1[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v2[,i] ~ GoA2)
+  goa.regr2[i] <- summary(mod)$coef[2,1] 
+  
+  mod <- lm(v3[,i] ~ GoA3)
+  goa.regr3[i] <- summary(mod)$coef[2,1]
+}
+# calculate era differences for each cell
+
+cc.diff <- cc.regr2 - cc.regr1 
+ncc.diff <- ncc.regr2 - ncc.regr1 
+scc.diff <- scc.regr2 - scc.regr1 
+goa.diff <- goa.regr2 - goa.regr1
+#diff.lim <- range(pdo.diff, npgo.diff) # limit for plotting
+
+X_cc_v<- as.data.frame(cc.regr1)%>%
+  cbind(as.data.frame(cc.regr2))%>%
+  cbind(as.data.frame(cc.regr3))%>%
+  cbind(as.data.frame(ncc.regr1))%>%
+  cbind(as.data.frame(scc.regr2))%>%
+  cbind(as.data.frame(scc.regr3))%>%
+  cbind(as.data.frame(scc.regr1))%>%
+  cbind(as.data.frame(goa.regr2))%>%
+  cbind(as.data.frame(goa.regr3))%>%
+  cbind(as.data.frame(goa.regr1))%>%
+  cbind(as.data.frame(ncc.regr2))%>%
+  cbind(as.data.frame(ncc.regr3))%>%
+  #cbind(as.data.frame(cc.diff))%>%
+  #cbind(as.data.frame(ncc.diff))%>%
+  #cbind(as.data.frame(scc.diff))%>%
+  #cbind(as.data.frame(goa.diff))%>%
+  rename('G. CCC 1967 - 1988' = cc.regr1, 'D. NCC 1967 - 1988' = ncc.regr1,'J. SCC 1967 - 1988' = scc.regr1,  'A. GoA 1967 - 1988' = goa.regr1,'H. CCC 1989 - 2012' = cc.regr2, 'E. NCC 1989 - 2012' = ncc.regr2,'K. SCC 1989 - 2012' = scc.regr2,  'B. GoA 1989 - 2012' = goa.regr2, 'I. CCC 2013 - 2022' = cc.regr3, 'F. NCC 2013 - 2022' = ncc.regr3,'L. SCC 2013 - 2022' = scc.regr3,  'C. GoA 2013 - 2022' = goa.regr3)
+
+X_cc_v$latitude <- lat 
+X_cc_v$longitude <- lon+360
+
+X_cc_v<- X_cc_v%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
+
+
+ggplot() + 
+  geom_raster(data=anomalyst_cc_slp, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("Spring SST vs. Spring Regional Upwelling")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(120,250), ylim=c(0,60)) +
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+
+

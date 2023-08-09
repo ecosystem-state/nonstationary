@@ -7,7 +7,8 @@ c.retrieve(
   {
     'product_type': 'monthly_averaged_reanalysis',
     'variable': [
-      'mean_sea_level_pressure', 'sea_surface_temperature','Northward_turbulent_surface_stress',
+    '10m_u_component_of_wind', '10m_v_component_of_wind', 'mean_sea_level_pressure',
+    'sea_surface_temperature',
     ],
     'year': [
       '1940', '1941', '1942',
