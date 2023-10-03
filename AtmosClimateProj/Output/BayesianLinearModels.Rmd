@@ -38,6 +38,8 @@ library(PBSmapping) #powerful mapping functions developed by Pacific Biological 
 library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
+library(plotrix)
+
 ```
 
 **Changes since Meeting**
@@ -155,7 +157,7 @@ bind_rows(bakun%>%
 
 ```
 
-```{r dates, include=FALSE}
+```{r cumupgai, echo=FALSE, fig.height = 11, fig.width =8}
 #col3<-pnw_palette("Sunset2",57,type="continuous")
 
 bakun_daily <- bakun_region%>%
@@ -180,7 +182,6 @@ bind_rows(bakun_cum%>%
 left_join(period2)
 
 
-bakun_time[which.min(bakun_time$upwelling_index_cum),]
 
 ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum, col=Year)) +
     facet_wrap(.~station_id, ncol = 3, scales='free') +
@@ -193,7 +194,7 @@ ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum, col=Year)) +
 bakun_time[which.min(bakun_time$upwelling_index_cum),]
 
 ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum)) +
-    facet_wrap(.~station_id, ncol = 3, scales='free') +
+    facet_wrap(station_id~region, scales='free', ncol=3) +
 #  ggtitle(paste(bakun_time$station_id, "/n", bakun_time$region))+
   geom_line(size=0.75,aes(group=as.numeric(Year)),col='grey') +
  geom_smooth(aes(group=period2, colour=period2)) +
@@ -204,35 +205,85 @@ ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum)) +
 
 2) Test covariation and correlation between station 51N and 48N/54N. Station 51N covaries more with both stations 54N and 57N (GoA) compared to 48N (Northern CC) and I elected to include it in the GoA  
 
-```{r testcov,  include=FALSE, echo=FALSE, message = FALSE, warnings = FALSE}
+```{r testcov,   echo=FALSE, message = FALSE, warnings = FALSE}
 
 cov.dat.test <- bakun%>%select(station_id, Month, Day, Year, upwelling_index)%>%
   group_by(Month, Day, Year, station_id) %>%
   summarise(upwelling_index = mean(upwelling_index))%>%
-  pivot_wider(names_from = "station_id", values_from = "upwelling_index")
+  pivot_wider(names_from = "station_id", values_from = "upwelling_index")%>%
+  ungroup()
+cov.dat.test <- cov.dat.test[complete.cases(cov.dat.test),]%>%
+  select(`24N`,`27N`,`30N`,`33N`,`36N`,`39N`,`42N`,`45N`,`48N`,`51N`,`54N`,`57N`)
+cov_result<-cov(cov.dat.test)
+cor_result<-cor(cov.dat.test)
+
+color2D.matplot(cov_result, 
+                show.values = TRUE,
+                axes = FALSE,
+                xlab = "",
+                ylab = "",
+                #vcex = 2,
+                vcol = "black",
+                extremes = c("red", "yellow"))
+axis(3, at = seq_len(ncol(cov_result)) - 0.5,
+     labels = colnames(cov_result), tick = FALSE)
+axis(2, at = seq_len(nrow(cov_result)) -0.5,
+     labels = rev(rownames(cov_result)), tick = FALSE, las = 1)
+
+color2D.matplot(cor_result, 
+                show.values = TRUE,
+                axes = FALSE,
+                xlab = "",
+                ylab = "",
+                #vcex = 2,
+                vcol = "black",
+                extremes = c("white","darkgreen"))
+axis(3, at = seq_len(ncol(cov_result)) - 0.5,
+     labels = colnames(cov_result), tick = FALSE)
+axis(2, at = seq_len(nrow(cov_result)) -0.5,
+     labels = rev(rownames(cov_result)), tick = FALSE, las = 1)
+axis(1, at = c(2,5,7.5,10.5),
+     labels = c("SCC","CCC", "NCC", "GoA"), tick = FALSE, las = 1)
+axis(1, at = c(0,4,6,9,12),lwd = 4,labels=FALSE, tick = TRUE, las = 1)
+axis(4, at = c(10.5,7.5,5,2)-0.5,
+     labels = c("SCC","CCC", "NCC", "GoA"), tick = FALSE, las = 2,hadj=.5)
+axis(4, at = c(0,3,6,8,12),lwd = 4,labels=FALSE, tick = TRUE, las = 2)
+abline(h=c(0,3,6,8,12),lwd = 3)
+abline(v=c(0,4,6,9,12),lwd = 3)
+segments(x0=c(0,4,6,9,12),y0=c(0,0,0,0,0),x1=c(0,4,6,9,12),y1=c(12,12,12,12,12),col="black", lwd=3)
+segments(x0=c(0,0,0,0,0),y0=c(0,3,6,8,12),x1=c(12,12,12,12,12),y1=c(0,3,6,8,12),col="black", lwd=3)
+```
 
 
-cov.dat.test <- cov.dat.test[complete.cases(cov.dat.test),]
+```{r testcovmonth,   echo=FALSE, message = FALSE, warnings = FALSE}
 
-cor(cov.dat.test$`48N`, cov.dat.test$`51N`)
-cor(cov.dat.test$`54N`, cov.dat.test$`51N`)
-cor(cov.dat.test$`54N`, cov.dat.test$`48N`)
+monthly <- readRDS(here("data/physical/climate_dat_monthly.rds"))
 
-cov(cov.dat.test$`54N`, cov.dat.test$`51N`)
-cov(cov.dat.test$`48N`, cov.dat.test$`51N`)
-cov(cov.dat.test$`54N`, cov.dat.test$`48N`)
-cov(cov.dat.test$`51N`, cov.dat.test$`57N`)
-cov(cov.dat.test$`51N`, cov.dat.test$`45N`)
+bakun_monthly <- bakun_region%>%
+  group_by( station_id,Year, Month,region)%>%
+  summarise(upwelling_index_sum = mean(na.omit(upwelling_index)))%>%
+  merge(monthly, by=c('Year', 'Month', 'region'))
+
+reg.names=unique(monthly$region)
+stat.names=unique(bakun_monthly$station_id)
+figure<-function(dat){
+ggplot(data = dat, aes(x = upwelling_index_sum, y = PDO,col=period)) +
+    facet_wrap(.~Month, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  ggtitle(dat$station_id[1])+
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+}
+
+figure(bakun_monthly%>%filter(region=="Northern CC"))
+for(i in 1:length(stat.names)){
+  print(figure(bakun_monthly%>%filter(station_id==stat.names[i])))
+  #print(figure(df.levels%>%filter(Covar.Name==names.covars[i])))
+}
 
 
-ggplot(cov.dat.test, aes(x=`48N`, y=`51N`))+
-geom_smooth()
-
-ggplot(cov.dat.test, aes(x=`51N`, y=`54N`))+
-geom_smooth()
-
-ggplot(cov.dat.test, aes(x=`48N`, y=`54N`))+
-geom_smooth()
 
 ```
 
@@ -310,6 +361,7 @@ bind_rows(bakun_summ%>%
                                             if_else(region == "Southern CC"&period == 2, 11,
                                               if_else(region == "Southern CC"&period == 3, 12,
                                                   13)))))))))))))
+
 
 ```
 
@@ -460,10 +512,13 @@ betaP<-posterior[13:24,]%>%
 
 n<- 1000
 scaled.anomaly <- NULL
+
 for(i in 1:NP){
 tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
 tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+
 scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+
 }
 
 scaled.anomaly<- scaled.anomaly%>%
@@ -486,6 +541,8 @@ ggplot(data = climate, aes(x = stand_bakun_monthly, y = PDO,col=period)) +
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
+
+
 
 ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   theme_bw() +
@@ -1053,6 +1110,9 @@ winter <- climate_dat%>%filter(season=="Spring")%>%
     distinct()%>%
   filter(Year_lag<2023)
 
+ncc_spring<-winter%>%filter(region=="Northern CC"& season=="Spring"&period==3)
+ncc_spring[which.min(ncc_spring$stand_bakun_seasonally),]
+
 N <- length(winter$period)
 NP <- 12
 P<- as.numeric(as.factor(winter$era.region))
@@ -1124,15 +1184,19 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period
   theme_bw()
 
 
-ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+
+ggplot(scaled.anomaly, aes(y = beta, x=alpha,fill = period,colour = period)) +
   theme_bw() +
-  facet_wrap(.~region, ncol = 4, scales='free') +
-  geom_density(alpha = 0.7) +
-  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
   #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
   geom_vline(xintercept = 0, lty = 2) +
-  labs(x = "Slope",
-       y = "Posterior density")
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
 
 ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
   theme_bw() +
