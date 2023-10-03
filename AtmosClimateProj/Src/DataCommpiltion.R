@@ -46,12 +46,13 @@ bakundat <-read.csv(here('data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>
   bind_rows(read.csv(here('data/physical/Bakun/erdUI606hr_d68d_e898_8529.csv')))%>%
   bind_rows(read.csv(here('data/physical/Bakun/erdUI616hr_d68d_e898_8529.csv')))
 
-
+#converting dates
 bakun <- bakundat%>%
   add_column('Year'=as.numeric(format(as.Date(bakundat$time),"%Y")))%>%
   add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
   add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
 
+#selecting stations and assigning regions
 bakun_region <- bakun%>%
   filter(station_id=='36N'|station_id=='39N')%>%
   mutate(region="Central CC")%>%
@@ -65,6 +66,7 @@ bakun_region <- bakun%>%
               filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
               mutate(region="GoA"))
 
+#selecting months to assign a season and adding lag for nov/dec for winter
 bakun_season <- bakun_region%>%
   filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
   mutate(season="Winter")%>%
@@ -76,15 +78,7 @@ bakun_season <- bakun_region%>%
               mutate(season="Summer"))%>%
   mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
 
-
-bakun_summ_season2 <- bakun_season%>%  
-  group_by(season, region) %>%
-  summarise(seasonal_mean = mean(na.omit(upwelling_index)), seasonal_sd =sd(na.omit(upwelling_index)))
-
-bakun_summ_annual2 <- bakun_season%>%  
-  group_by(region) %>%
-  summarise(yearly_mean = mean(na.omit(upwelling_index)), yearly_sd =sd(na.omit(upwelling_index)))
-
+#creating an annual standardization
 bakun_summ_annual <- bakun_season%>%
   group_by(region, Year_lag) %>%
   summarise(annual_mean = mean(na.omit(upwelling_index)))%>%
@@ -95,6 +89,7 @@ bakun_summ_annual <- bakun_season%>%
   mutate(stand_bakun_annual = (annual_mean-mean)/sd)%>%
   select(Year_lag, region,stand_bakun_annual)
 
+#creating a seasonal standardization
 bakun_summ_seasonal <- bakun_season%>%
   group_by(region, Year_lag,  season) %>%
   summarise(season_mean = mean(na.omit(upwelling_index)))%>%
@@ -103,17 +98,17 @@ bakun_summ_seasonal <- bakun_season%>%
   mutate(mean = mean(season_mean), sd=sd(season_mean))%>%
   ungroup()%>%
   mutate(stand_bakun_seasonally = (season_mean-mean)/sd)%>%
-  select(Year_lag, season, region,stand_bakun_seasonally)
+  select(Year_lag, season, region,stand_bakun_seasonally, Year)
 
+#creating a monthly standardization (note this uses YearLag)
 bakun_summ<- bakun_season%>%
   group_by(Month, region, Year_lag) %>%
   summarise(monthly_mean = mean(na.omit(upwelling_index)))%>%
-  mutate(stand_bakun_annually = (monthly_mean-mean(na.omit(monthly_mean)))/sd(na.omit(monthly_mean)))%>%
+  mutate(stand_bakun_monthly = (monthly_mean-mean(na.omit(monthly_mean)))/sd(na.omit(monthly_mean)))%>%
   mutate(season=if_else(Month == 11|Month ==12|Month ==1|Month ==2|Month ==3, "Winter",
                         if_else(Month ==4|Month ==5|Month ==6, "Spring",
                                 if_else(Month ==7|Month ==8, "Summer", "Autumn"))))%>%
   right_join(bakun_summ_season2, by = c('region', 'season'))%>%
-  mutate(stand_bakun_monthly = (monthly_mean-seasonal_mean)/seasonal_sd)%>%
   left_join(bakun_summ_seasonal)%>%
   left_join(bakun_summ_annual)
 
@@ -140,6 +135,10 @@ bakun_time <-bakun_summ%>%
                                                               if_else(region == "Southern CC"&period == 2, 11,
                                                                    if_else(region == "Southern CC"&period == 3, 12,
                                                                         13)))))))))))))
+
+bakun_monthly <- bakun_time%>%
+  select(Month, region, Year_lag, monthly_mean, stand_bakun_monthly)
+
 ##### PDO ##### 
 #### Climate Indices ####
 
@@ -190,6 +189,44 @@ NPGO_annual <-  NPGO%>%
   group_by(Year_lag)%>%
   summarise(annual_NPGO = mean(NPGO))
 
+##### North Pacific High #####
+NPH <- read.csv(here('data/physical/cciea_OC_NPH_c081_8a5e_509a.csv'))
+NPH<-NPH%>%
+  add_column('Year'=as.numeric(format(as.Date(NPH$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(NPH$time),"%m")))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
+
+NPH_seasonal <-  NPH%>%
+  filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(NPH%>%
+              filter(Month==4|Month==5|Month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(NPH%>%
+              filter(Month==7|Month==8)%>%
+              mutate(season="Summer"))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
+  group_by(Year_lag, season)%>%
+  summarise(seasonal_NPH = mean(nph_area))
+
+  
+NPH_seasonal<-NPH_seasonal%>%
+  group_by(season)%>%
+  mutate(seasonal_NPH=(seasonal_NPH-mean(seasonal_NPH))/sd(seasonal_NPH))
+
+
+  ggplot(data = NPH_seasonal%>%filter(season=="Spring"), aes(x = Year_lag, y = NPH_stand)) +
+    geom_line(size=0.75)
+    geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+    theme_bw()
+  
+  
+  
+  NPH_annual <-  NPH%>%
+  group_by(Year_lag)%>%
+  summarise(annual_NPH = mean(nph_area))
+
+
 ##### ENSO #####
 
 ONI <- read.csv(here('data/physical/ONI.csv'))%>%
@@ -211,10 +248,70 @@ ONI_seasonal <-  ONI%>%
   group_by(Year_lag, season)%>%
   summarise(seasonal_ONI = mean(ONI))
 
+ONI_seasonal%>%group_by(season)%>%
+  summarise(mean = mean(na.omit(seasonal_ONI)), sd=sd(na.omit(seasonal_ONI)))
+
 
 ONI_annual <-  ONI%>%
   group_by(Year_lag)%>%
   summarise(annual_ONI = mean(ONI))
+
+##### NPI #####
+
+NPI <- read.csv(here('data/physical/NPI_monthly.csv'))%>%
+  filter(Year>1941)%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
+NPI_seasonal<-NPI%>%
+  filter(Year>1941)%>%
+filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(NPI%>%
+              filter(Month==4|Month==5|Month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(NPI%>%
+              filter(Month==7|Month==8)%>%
+              mutate(season="Summer"))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
+  group_by(Year_lag, season)%>%
+  summarise(seasonal_NPI = mean(NPI))
+
+NPI_seasonal<-NPI_seasonal%>%
+  group_by(season)%>%
+  mutate(NPI_stand=(seasonal_NPI-mean(seasonal_NPI))/sd(seasonal_NPI))
+
+
+### Copepod Data ####
+cop <- read.csv(here('data/biological/copepod_biomass_anomaly.csv'))
+
+copepod<-cop%>%
+  add_column('Year'=as.numeric(format(as.Date(cop$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(cop$time),"%m")))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))
+ 
+copepod_annual<-copepod%>%
+  group_by(Year_lag)%>%
+  summarise(annual_copepod_northern = mean(northern_biomass_anomaly), 
+            annual_copepod_southern = mean(southern_biomass_anomaly))
+
+copepod_seasonal<-copepod%>%  
+filter(Month==12|Month==11|Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(copepod%>%
+              filter(Month==4|Month==5|Month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(copepod%>%
+              filter(Month==7|Month==8)%>%
+              mutate(season="Summer"))%>%
+  mutate(Year_lag = if_else(Month == 11|Month ==12, Year+1, Year))%>%
+  group_by(Year_lag, season)%>%
+  summarise(seasonal_copepod_northern = mean(northern_biomass_anomaly), 
+            seasonal_copepod_southern = mean(southern_biomass_anomaly))
+  
+copepod_seasonal<-copepod_seasonal%>%  
+  mutate(period='2')%>%
+  bind_rows(copepod_seasonal%>%
+              filter(Year_lag>2013)%>%
+              mutate(period='3'))
 
 ### Compile  with Upwelling Indices to Dataframe ####
 
@@ -222,39 +319,92 @@ climate_dat <- bakun_time%>%
   merge(PDO, by=c('Month', 'Year_lag'))%>%
   merge(PDO_annual, by=c('Year_lag'))%>%
   merge(PDO_seasonal, by=c('season', 'Year_lag'))%>%
+  merge(NPH, by=c('Month', 'Year_lag'))%>%
+  merge(NPH_annual, by=c('Year_lag'))%>%
+  merge(NPH_seasonal, by=c('season', 'Year_lag'))%>%
   merge(ONI, by=c('Month', 'Year_lag'))%>%
   merge(ONI_annual, by=c('Year_lag'))%>%
   merge(ONI_seasonal, by=c('season', 'Year_lag'))%>%
+# merge(copepod_annual, by=c('Year_lag'))%>%
+#  merge(copepod_seasonal, by=c('season', 'Year_lag'))%>%
   left_join(NPGO, by=c('Month', 'Year_lag'))%>%
   left_join(NPGO_annual, by=c('Year_lag'))%>%
+  merge(NPI, by=c('Month', 'Year_lag'))%>%
+  merge(NPI_seasonal, by=c('season', 'Year_lag'))%>%
   left_join(NPGO_seasonal, by=c('season', 'Year_lag'))
 
 
 climate_dat <- climate_dat%>%
   select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, 
-         era.region,annual_PDO, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI)%>%
+         era.region,annual_PDO, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI,
+         annual_NPH, seasonal_NPH, seasonal_NPI,NPI_stand)%>%
   distinct()%>%
   filter(Year_lag<2023)
 
-ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_ONI))+
+ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_NPI))+
   geom_point()
 
 saveRDS(climate_dat, file = here('data/physical/climate_dat_upwelling.rds'))
+
+
+### Compile  with Upwelling Indices and Copepod into Dataframe ####
+
+climate_dat <- PDO_seasonal%>%
+  merge(PDO_annual, by=c('Year_lag'))%>%
+  #merge(PDO, by=c('Year_lag'))%>%
+  #merge(NPH, by=c('Month', 'Year_lag'))%>%
+  merge(NPH_annual, by=c('Year_lag'))%>%
+  merge(NPH_seasonal, by=c('season', 'Year_lag'))%>%
+ # merge(ONI, by=c('Month', 'Year_lag'))%>%
+  merge(ONI_annual, by=c('Year_lag'))%>%
+  merge(ONI_seasonal, by=c('season', 'Year_lag'))%>%
+  # merge(copepod%>%select(Year_lag, period), by=c('Year_lag'))%>%
+  merge(copepod_annual, by=c('Year_lag'))%>%
+  merge(copepod_seasonal, by=c('season', 'Year_lag'))%>%
+  #left_join(NPGO, by=c('Month', 'Year_lag'))%>%
+  left_join(NPGO_annual, by=c('Year_lag'))%>%
+  left_join(NPI_seasonal, by=c('season', 'Year_lag'))%>%
+  left_join(NPGO_seasonal, by=c('season', 'Year_lag'))%>%
+  add_column(region='NCC')%>%
+  distinct()
+
+
+climate_dat <- climate_dat%>%
+  select(Year_lag, region, period, season,
+         annual_PDO, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI,
+         annual_NPH, seasonal_NPH,NPI_stand, annual_copepod_northern, annual_copepod_southern,
+         seasonal_copepod_northern, seasonal_copepod_southern)%>%
+  distinct()%>%
+  filter(Year_lag<2023)
+
+ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_NPH))+
+  geom_point()
+
+saveRDS(climate_dat, file = here('data/physical/climate_dat_cop.rds'))
+
+
+
+
+
+
+
 
 ### Compile  Indices to Dataframe ####
 
 climate_dat <-PDO_seasonal%>%
   merge(ONI_seasonal, by=c('season', 'Year_lag'))%>%
-  left_join(NPGO_seasonal, by=c('season', 'Year_lag'))
+  left_join(NPGO_seasonal, by=c('season', 'Year_lag'))%>%
+  left_join(NPH_seasonal, by=c('season', 'Year_lag'))%>%
+  left_join(NPI, by=c('Year_lag'))
 
 climate_dat <-climate_dat%>%  
 filter(Year_lag<1989)%>%
   mutate(period='1')%>%
   bind_rows(climate_dat%>%
-              filter(Year_lag>=1989 & Year_lag<2012)%>%
+              filter(Year_lag>=1989 & Year_lag<2014)%>%
               mutate(period='2'))%>%
   bind_rows(climate_dat%>%
-              filter(Year_lag>=2012)%>%
+              filter(Year_lag>=2014)%>%
               mutate(period='3'))
 
 climate_dat <-climate_dat%>%  
@@ -271,4 +421,27 @@ ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_ONI))+
   geom_point()
 
 saveRDS(climate_dat, file = here('data/physical/climate_dat.rds'))
+
+
+#### creating dataframe for monthly data ####
+
+
+climate_dat_monthly <-PDO%>%
+  merge(ONI, by=c('Month', 'Year_lag', 'Year'))%>%
+  merge(NPH, by=c('Month', 'Year_lag', 'Year'))%>%
+  merge(NPGO, by=c('Month', 'Year_lag', 'Year'))%>%
+  rename(NPH=nph_area)%>%
+  merge(bakun_monthly, by=c('Month', 'Year_lag'))
+
+climate_dat_monthly2 <-climate_dat_monthly%>%
+  filter(Year_lag>1963 & Year_lag<1989)%>%
+  mutate(period='1')%>%
+  bind_rows(climate_dat_monthly%>%
+              filter(Year_lag>=1989 & Year_lag<2014)%>%
+              mutate(period='2'))%>%
+  bind_rows(climate_dat_monthly%>%
+              filter(Year_lag>2013)%>%
+              mutate(period='3'))
+  
+saveRDS(climate_dat_monthly2, file = here('data/physical/climate_dat_monthly.rds'))
 

@@ -110,11 +110,11 @@ Figures 2 and 3 are purely exploratory to visualize patterns in upwelling and cl
 
 ```{r uptrend, echo=FALSE}
 
-season_dat <- climate_dat %>% pivot_longer(cols=c('seasonal_ONI', 'seasonal_PDO','seasonal_NPGO', "NPI"),
+season_dat <- climate_dat %>% pivot_longer(cols=c('seasonal_ONI', 'seasonal_PDO','seasonal_NPGO', "seasonal_NPH"),
                     names_to='Index',
                     values_to='values')
 
-annual_dat <- climate_dat %>% pivot_longer(cols=c('annual_ONI', 'annual_PDO','annual_NPGO', "NPI"),
+annual_dat <- climate_dat %>% pivot_longer(cols=c('annual_ONI', 'annual_PDO','annual_NPGO', "annual_NPH"),
                     names_to='Index',
                     values_to='values')
 
@@ -147,6 +147,8 @@ ggplot(data = season_dat%>%filter(season=="Winter"), aes(x = Year_lag, y = value
 #| message: false
 # start by loading output for correlation summary
 correlation <-readRDS(here('data/physical/correlation_analysis.rds'))
+correlation2 <-readRDS(here('data/physical/correlation_analysis_indices.rds'))
+
 SOM_data<-readRDS(here('data/physical/SOM_data.rds'))
 SOM_output<-readRDS(here('data/physical/SOM_output.rds'))
 
@@ -232,16 +234,16 @@ output
 #| warning: false
 #| message: false
 outdat<-climate_dat%>%select(Year_lag, season,
-          seasonal_PDO, seasonal_NPGO, seasonal_ONI,NPI)%>%
+          seasonal_PDO, seasonal_NPGO, seasonal_ONI,seasonal_NPH)%>%
   distinct()%>%
   filter(Year_lag<2023)%>%
-  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPI=NPI)%>%
+  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPH=seasonal_NPH)%>%
   dplyr::left_join(sst_out, by = 'year')%>%
   filter(season == "Winter")%>%
-  select(year, period, PDO, NPGO, ENSO, NPI,cluster, var)%>%
+  select(year, period, PDO, NPGO, ENSO, NPH,cluster, var)%>%
   distinct()%>%
  pivot_longer(
-  cols = c(PDO, ENSO, NPGO,NPI),
+  cols = c(PDO, ENSO, NPGO,NPH),
   names_to = c("Index"),
   values_to = "value")
 
@@ -306,16 +308,16 @@ output
 #| message: false
 
 outdat<-climate_dat%>%select(Year_lag, season,
-          seasonal_PDO, seasonal_NPGO, seasonal_ONI,NPI)%>%
+          seasonal_PDO, seasonal_NPGO, seasonal_ONI,seasonal_NPH)%>%
   distinct()%>%
   filter(Year_lag<2023)%>%
-  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPI=NPI)%>%
+  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPH=seasonal_NPH)%>%
   dplyr::left_join(sst_out, by = 'year')%>%
   filter(season == "Winter")%>%
-  select(year, period, PDO, NPGO, ENSO, NPI,cluster, var)%>%
+  select(year, period, PDO, NPGO, ENSO, NPH,cluster, var)%>%
   distinct()%>%
  pivot_longer(
-  cols = c(PDO, ENSO, NPGO,NPI),
+  cols = c(PDO, ENSO, NPGO,NPH),
   names_to = c("Index"),
   values_to = "value")
 
@@ -382,16 +384,16 @@ output
 #| warning: false
 #| message: false
 outdat<-climate_dat%>%select(Year_lag, season,
-          seasonal_PDO, seasonal_NPGO, seasonal_ONI,NPI)%>%
+          seasonal_PDO, seasonal_NPGO, seasonal_ONI,seasonal_NPH)%>%
   distinct()%>%
   filter(Year_lag<2023)%>%
-  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPI=NPI)%>%
+  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPH=seasonal_NPH)%>%
   dplyr::left_join(sst_out, by = 'year')%>%
   filter(season == "Winter")%>%
-  select(year, period, PDO, NPGO, ENSO, NPI,cluster, var)%>%
+  select(year, period, PDO, NPGO, ENSO, NPH,cluster, var)%>%
   distinct()%>%
  pivot_longer(
-  cols = c(PDO, ENSO, NPGO,NPI),
+  cols = c(PDO, ENSO, NPGO,NPH),
   names_to = c("Index"),
   values_to = "value")
 
@@ -454,16 +456,16 @@ output
 #| warning: false
 #| message: false
 outdat<-climate_dat%>%select(Year_lag, season,
-          seasonal_PDO, seasonal_NPGO, seasonal_ONI,NPI)%>%
+          seasonal_PDO, seasonal_NPGO, seasonal_ONI,seasonal_NPH)%>%
   distinct()%>%
   filter(Year_lag<2023)%>%
-  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPI=NPI)%>%
+  rename(year=Year_lag, NPGO = seasonal_NPGO, PDO = seasonal_PDO, ENSO= seasonal_ONI, NPH=seasonal_NPH)%>%
   dplyr::left_join(sst_out, by = 'year')%>%
   filter(season == "Winter")%>%
-  select(year, period, PDO, NPGO, ENSO, NPI,cluster, var)%>%
+  select(year, period, PDO, NPGO, ENSO, NPH,cluster, var)%>%
   distinct()%>%
  pivot_longer(
-  cols = c(PDO, ENSO, NPGO,NPI),
+  cols = c(PDO, ENSO, NPGO,NPH),
   names_to = c("Index"),
   values_to = "value")
 
@@ -542,6 +544,49 @@ ggplot() +
 
 ```
 
+
+
+```{r slpcorrindex, fig.height = 11, fig.width =11}
+#| echo: false
+#| warning: false
+#| message: false
+
+slp_cor2 <- correlation2%>%
+  filter(var=="SLP")
+
+
+ggplot() + 
+  geom_raster(data=slp_cor2, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("SLP")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+
+```
+
+```{r sstcorrindex, fig.height = 11, fig.width =11}
+#| echo: false
+#| warning: false
+#| message: false
+
+sst_cor2 <- correlation2%>%
+  filter(var=="SST")
+
+
+ggplot() + 
+  geom_raster(data=sst_cor2, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_wrap(~analysis, ncol = 3) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("SST")+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+
+```
 ### Upwelling and Climate Indices
 
 #### Objective 3
@@ -570,7 +615,7 @@ ggplot() +
 winter <- climate_dat%>%filter(season=="Spring")%>%
   select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,seasonal_PDO)%>%
     distinct()%>%
-  filter(Year_lag<2023&Year_lag!=2022)
+  filter(Year_lag<2023)
 
 N <- length(winter$period)
 NP <- 12
@@ -621,15 +666,15 @@ tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
 scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
 }
 
-scaled.anomaly<- scaled.anomaly%>%
+scaled.anomaly.pdo<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
-            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index = rep("PDO", 12000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
 region.lev <-c("GoA", "Northern CC", "Central CC", "Southern CC")
 winter$region <-factor(winter$region, levels=region.lev) 
 region.lev2 <-c("GoA", "NCC", "CCC", "SCC")
-scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+scaled.anomaly.pdo$region <-factor(scaled.anomaly.pdo$region, levels=region.lev2) 
 
 ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
@@ -640,7 +685,7 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period
   theme_bw()
 
 
-ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+ggplot(scaled.anomaly.pdo, aes(x = beta, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -650,7 +695,7 @@ ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   labs(x = "Slope",
        y = "Posterior density")
 
-ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+ggplot(scaled.anomaly.pdo, aes(x = alpha, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -659,6 +704,20 @@ ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
   geom_vline(xintercept = 0, lty = 2) +
   labs(x = "Intercept (scaled anomaly)",
        y = "Posterior density")
+
+ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
+
 ```
 
 #### NPGO - Upwelling
@@ -723,13 +782,13 @@ tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
 scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
 }
 
-scaled.anomaly<- scaled.anomaly%>%
+scaled.anomaly.npgo<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
-            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index = rep("NPGO",12000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
 winter$region <-factor(winter$region, levels=region.lev) 
-scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+scaled.anomaly.npgo$region <-factor(scaled.anomaly.npgo$region, levels=region.lev2) 
 
 ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_NPGO,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
@@ -740,7 +799,7 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_NPGO,col=perio
   theme_bw()
 
 
-ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+ggplot(scaled.anomaly.npgo, aes(x = beta, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -750,7 +809,7 @@ ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   labs(x = "Slope",
        y = "Posterior density")
 
-ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+ggplot(scaled.anomaly.npgo, aes(x = alpha, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -760,6 +819,19 @@ ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
   labs(x = "Intercept (scaled anomaly)",
        y = "Posterior density")
 
+
+ggplot(scaled.anomaly.npgo, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
 ```
 
 #### ENSO - Upwelling
@@ -824,13 +896,13 @@ tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
 scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
 }
 
-scaled.anomaly<- scaled.anomaly%>%
+scaled.anomaly.oni<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
-            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index=rep("ONI", 12000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
 winter$region <-factor(winter$region, levels=region.lev) 
-scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+scaled.anomaly.oni$region <-factor(scaled.anomaly.oni$region, levels=region.lev2) 
 
 ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_ONI,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
@@ -841,7 +913,7 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_ONI,col=period
   theme_bw()
 
 
-ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+ggplot(scaled.anomaly.oni, aes(x = beta, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -851,7 +923,7 @@ ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   labs(x = "Slope",
        y = "Posterior density")
 
-ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+ggplot(scaled.anomaly.oni, aes(x = alpha, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -861,27 +933,42 @@ ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
   labs(x = "Intercept (scaled anomaly)",
        y = "Posterior density")
 
+
+ggplot(scaled.anomaly.oni, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
 ```
 
-#### NPI - Upwelling
+#### NPH - Upwelling
 
-**Figure 16**: Relationship between upwelling and NPI based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept
+**Figure 16**: Relationship between upwelling and NPH based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept
 
 ```{r NPI, fig.height = 2.5, fig.width =7}
 #| echo: false
 #| warning: false
 #| message: false
 winter <- climate_dat%>%filter(season=="Spring")%>%
-  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,NPI)%>%
+  select(Year_lag, region, season, seasonal_mean, stand_bakun_seasonally,stand_bakun_annual,period, era.region,seasonal_NPH)%>%
     distinct()%>%
   filter(Year_lag<2023)
+
+#count(winter%>%filter(region=='GoA')$seasonal_NPH==0)
 
 N <- length(winter$period)
 NP <- 12
 P<- as.numeric(as.factor(winter$era.region))
 K <- 1
 x <- data.frame(winter$stand_bakun_seasonally)
-y<-winter$NPI
+y<-winter$seasonal_NPH
 data <- list(N = N, #total number of opservations
              NP=NP, #total number of time periods
              P = P, #time period pointer vector
@@ -925,15 +1012,16 @@ tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
 scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
 }
 
-scaled.anomaly<- scaled.anomaly%>%
+scaled.anomaly.nph<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
-            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)))%>%
+            region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index=rep("NPH", 12000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
 winter$region <-factor(winter$region, levels=region.lev) 
-scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+scaled.anomaly.nph$region <-factor(scaled.anomaly.nph$region, levels=region.lev2) 
 
-ggplot(data = winter, aes(x = stand_bakun_seasonally, y =NPI,col=period)) +
+
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_NPH,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
@@ -941,8 +1029,7 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =NPI,col=period)) +
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
 
-
-ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
+ggplot(scaled.anomaly.nph, aes(x = beta, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -952,7 +1039,7 @@ ggplot(scaled.anomaly, aes(x = beta, fill = period)) +
   labs(x = "Slope",
        y = "Posterior density")
 
-ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
+ggplot(scaled.anomaly.nph, aes(x = alpha, fill = period)) +
   theme_bw() +
   facet_wrap(.~region, ncol = 4, scales='free') +
   geom_density(alpha = 0.7) +
@@ -962,8 +1049,82 @@ ggplot(scaled.anomaly, aes(x = alpha, fill = period)) +
   labs(x = "Intercept (scaled anomaly)",
        y = "Posterior density")
 
+
+ggplot(scaled.anomaly.nph, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  #geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
 ```
 
+
+```{r fullplot, fig.height = 7, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+
+scaled.anomaly <- rbind(scaled.anomaly.nph, scaled.anomaly.pdo, scaled.anomaly.oni, scaled.anomaly.npgo)
+
+scaled.anomaly$region <-factor(scaled.anomaly$region, levels=region.lev2) 
+
+ggplot(scaled.anomaly, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+  facet_grid(Index~region, scales='free') +
+  scale_fill_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]),  labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
+
+
+clim<- climate_dat%>%filter(season=="Spring")%>%
+  select(Year_lag, period,region, season, stand_bakun_seasonally,seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
+  rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
+  distinct()%>%
+  filter(Year_lag<2023)%>%
+  pivot_longer(!c(Year_lag, period, region, season, stand_bakun_seasonally), names_to = "Index_Name", values_to = "Index_Value")
+
+region.lev3 <-c("GoA","Northern CC", "Central CC", "Southern CC")
+clim$region <-factor(clim$region, levels=region.lev3) 
+
+ggplot(data = clim, aes(x = stand_bakun_seasonally, y =Index_Value,col=period)) +
+  facet_grid(Index_Name~region, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle("Spring")
+
+clim<- climate_dat%>%filter(season=="Winter")%>%
+  select(Year_lag, period,region, season, stand_bakun_seasonally,seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
+  rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
+  distinct()%>%
+  filter(Year_lag<2023)%>%
+  pivot_longer(!c(Year_lag, period, region, season, stand_bakun_seasonally), names_to = "Index_Name", values_to = "Index_Value")
+
+clim$region <-factor(clim$region, levels=region.lev3) 
+
+ggplot(data = clim, aes(x = stand_bakun_seasonally, y =Index_Value,col=period)) +
+  facet_grid(Index_Name~region, scales='free') +
+  geom_point(size=0.75,aes(col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle("Winter")
+```
 **Figure 17**: Reproduced from Mike Jacox for reference
 
 **Preliminary Conclusions**: Our results show distinct spatial patterns in SLP and SST since 2000 compared to the pre-2000 record with an exceptional pattern of SST from 2014 - 2022 that had not been observed prior to 1996. Spatial patterns of SLP are associated with weak Aleutian Low and La Nina conditions that have also been observed in recent years. There is evidence of non-stationary relationships between upwelling, climate indices and forcing mechanisms, particularly during the MHW era in the Northern California Current. We found that the relationship between SST-upwelling and SLP-upwelling reversed from 2013 - 2022 in the NCC. We observed similar reversals between ENSO-upwelling and PDO-upwelling in the NCC during the MHW era. We also find evidence of moderate strengthening relationships between ENSO-upwelling and PDO-upwelling in the CCC and SCC driven by changes in the SST and SLP upwelling relationships in these regions. Altogether, these results indicate changing environmental meaning of climate indices, particularly ENSO and PDO, driven by global trends in forcing mechanisms, specifically SLP and SST. Further, we show evidence of prolonged and persistent change in SLP and SST since 2000 and at least since 2014. Applications of climate indices in ecological analyses should consider their environmental and ecological meanings differ from historical interpretations during the MHW era. 
