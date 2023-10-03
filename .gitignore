@@ -2,3 +2,6 @@
 .DS_Store
 .Rproj.user
 copernicus_jul10.nc
+correlation_analysis_diff.rds
+correlation_analysis.rds
+correlation_analysis_indices.rds
