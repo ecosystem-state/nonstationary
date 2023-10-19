@@ -213,7 +213,7 @@ cov.dat.test <- bakun%>%select(station_id, Month, Day, Year, upwelling_index)%>%
   pivot_wider(names_from = "station_id", values_from = "upwelling_index")%>%
   ungroup()
 cov.dat.test <- cov.dat.test[complete.cases(cov.dat.test),]%>%
-  select(`24N`,`27N`,`30N`,`33N`,`36N`,`39N`,`42N`,`45N`,`48N`,`51N`,`54N`,`57N`)
+  select(`24N`,`27N`,`30N`,`33N`,`36N`,`39N`,`42N`,`45N`,`48N`,`51N`,`54N`,`57N`,`60N`)
 cov_result<-cov(cov.dat.test)
 cor_result<-cor(cov.dat.test)
 

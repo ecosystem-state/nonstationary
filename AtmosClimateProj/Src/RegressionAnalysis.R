@@ -66,7 +66,6 @@ spring_lon <- lon[-to_drop]
 spring_years <- unique(dates$spring_year)
 spring_years <- sort(spring_years[-which(is.na(spring_years))])
 X_spring <- matrix(NA, length(spring_years), ncol(X))
-# combine monthly values into an annual mean
 for(i in 1:length(spring_years)) {
   X_spring[i,] = colMeans(X[which(dates$spring_year == spring_years[i]),])
 }
@@ -75,17 +74,15 @@ for(i in 1:length(spring_years)) {
 for(i in 1:nrow(X_spring)) {
   X_spring[i,] = X_spring[i,] - mean(X_spring[i,], na.rm=T)
 }
-# remove the spatial means and standardize so that across years each cell ~ N(0,1)
 X_spring <- scale(X_spring)
 
-sst_anomaly <- X_spring
-# Commented out -- redundant with scale() above
-#sst_anomaly <- matrix(NA, length(spring_years), ncol(X))
-#mean_sst <- apply(X_spring,2,mean)
-#sd_sst <- apply(X_spring,2,sd)
-#for(i in 1:ncol(X)) {
-#  sst_anomaly[,i] = (X_spring[,i]-mean_sst[i])
-#}
+
+sst_anomaly <- matrix(NA, length(spring_years), ncol(X))
+mean_sst <- apply(X_spring,2,mean)
+sd_sst <- apply(X_spring,2,sd)
+for(i in 1:ncol(X)) {
+  sst_anomaly[,i] = (X_spring[,i]-mean_sst[i])
+}
 #assigning names to time allows you to divide data by ERA
 
 dimnames(sst_anomaly) <- list(as.character(spring_years),paste("N", spring_lat, "E", spring_lon, sep=""))
@@ -443,12 +440,14 @@ X_winter <- scale(X_winter)
 
 
 #X_winter<- X_winter/100
-slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
-mean_slp <- apply(X_winter,2,mean)
-sd_slp <- apply(X_winter,2,sd)
-for(i in 1:ncol(X)) {
-  slp_anomaly[,i] = (X_winter[,i]-mean_slp[i])
-}
+#slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
+#mean_slp <- apply(X_winter,2,mean)
+#sd_slp <- apply(X_winter,2,sd)
+#for(i in 1:ncol(X)) {
+#  slp_anomaly[,i] = (X_winter[,i]-mean_slp[i])
+#}
+
+slp_anomaly <-X_winter
 
 dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
 dim(slp_anomaly)
@@ -541,7 +540,7 @@ anomaly_cc_slp<- anomalyst_cc_slp%>%
 world <- st_as_sf(map('world2', plot=F, fill=T)) #base layer for land masses
 #plot code
 ggplot() + 
-  geom_raster(data=anomalyst_cc_slp, aes(x=longitude,y=latitude,fill = coefficient)) + 
+  geom_raster(data=anomaly_cc_slp, aes(x=longitude,y=latitude,fill = coefficient)) + 
   facet_wrap(~analysis, ncol = 3) + 
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
   coord_sf(xlim=c(120,240), ylim=c(0,60)) +
@@ -708,7 +707,7 @@ saveRDS(cor_diff, file = here('data/physical/correlation_analysis_diff.rds'))
 
 
 
-#### uwind Analysis ####
+#### plotting SLP means ####
 # get lat/long
 x <- ncvar_get(nc, "longitude")
 y <- ncvar_get(nc, "latitude")

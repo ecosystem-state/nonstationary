@@ -150,18 +150,7 @@ correlation <-readRDS(here('data/physical/correlation_analysis.rds'))
 correlation2 <-readRDS(here('data/physical/correlation_analysis_indices.rds'))
 correlationdiff <-readRDS(here('data/physical/correlation_analysis_diff.rds'))
 
-SOM_data<-readRDS(here('data/physical/SOM_data.rds'))
-SOM_output<-readRDS(here('data/physical/SOM_output.rds'))
 
-SOM_output<-SOM_output%>%
-filter(year<1989)%>%
-  mutate(period='1')%>%
-  bind_rows(SOM_output%>%
-              filter(year>=1989 & year<2012)%>%
-              mutate(period='2'))%>%
-  bind_rows(SOM_output%>%
-              filter(year>=2012)%>%
-              mutate(period='3'))
 col<-pnw_palette("Sunset2",3,type="discrete")
 
 ```
@@ -174,7 +163,7 @@ col<-pnw_palette("Sunset2",3,type="discrete")
 
 **Approach** This section includes regression analysis to identify changes in the relationships between SST and SLP with regional climate indices. We apply linear models with time periods treated as factors (1967 - 1988; 1989 - 2013; 2013 - 2022) examining regional differences (Figure 1) in associations.
 
-**Summary** The slope of the relationship between SST and climate indices is relaatively consistent through time. There is some change in the relationship with NPGO specifically during the 2013 - 2021 period particularly along the CCC and SCC coast. There is greater variability in the relationship (slope) between climate indices and SLP. There is a reversal of the relationship between climate indices and SLP from 1989 - 2012 and 2013 - 2022, this shift in the slope is particularly pronounced in the Northern California Current and PDO and ONI. 
+**Summary** The slope of the relationship between SST and climate indices is relaatively consistent through time. There is some change in the relationship with NPGO specifically during the 2013 - 2021 period particularly along the CCC and SCC coast. There is greater variability in the relationship (slope) between climate indices and SLP. There is a reversal of the relationship between climate indices and SLP from 1989 - 2012 and 2013 - 2022, this shift in the slope is particularly pronounced in the Northern California Current and PDO and ONI.
 
 ```{r sstcorrplot,fig.height = 11, fig.width =11}
 #| echo: false
@@ -196,7 +185,6 @@ ggplot() +
  
 
 ```
-
 
 ```{r slpcorrplot, fig.height = 11, fig.width =11}
 #| echo: false
@@ -221,8 +209,7 @@ ggplot() +
 
 ```
 
-
-**Figure 4**: Linear regression (slope) between climate indices (PDO, ONI, NPH, NPGO) and sea level pressure. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SLP anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). 
+**Figure 4**: Linear regression (slope) between climate indices (PDO, ONI, NPH, NPGO) and sea level pressure. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SLP anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS).
 
 ```{r slpcorrindex, fig.height = 11, fig.width =11}
 #| echo: false
@@ -266,7 +253,7 @@ ggplot() +
 
 ```
 
-**Figure 5**: Linear regression (slope) between climate indices (PDO, ONI, NPH, NPGO) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS). 
+**Figure 5**: Linear regression (slope) between climate indices (PDO, ONI, NPH, NPGO) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al. 2020 PNAS).
 
 ```{r sstcorrindex, fig.height = 11, fig.width =11}
 #| echo: false
@@ -309,6 +296,7 @@ ggplot() +
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 
 ```
+
 ### Upwelling and Climate Indices
 
 #### Objective 3
@@ -388,7 +376,7 @@ scaled.anomaly.pdo<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
             region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index = rep("PDO", 12000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
-
+#ci(scaled.anomaly.pdo, ci=0.8 )
 region.lev <-c("GoA", "Northern CC", "Central CC", "Southern CC")
 winter$region <-factor(winter$region, levels=region.lev) 
 region.lev2 <-c("GoA", "NCC", "CCC", "SCC")
@@ -833,20 +821,17 @@ ggplot(data = clim, aes(y = stand_bakun_seasonally, x =Index_Value,col=period)) 
   ggtitle("Winter")
 ```
 
-
-
 ### Copepod and Climate Indices
 
 #### Objective 4
 
-**Objective 4**: Identify whether decoupling between climate indices and physical conditions is reflected in the biology (copepods) of the NCC. 
+**Objective 4**: Identify whether decoupling between climate indices and physical conditions is reflected in the biology (copepods) of the NCC.
 
 **Approach**: Bayesian linear model with temporal factors for 1996 - 2013; 2014 - 2023.
 
 **Summary**: We find that the mean shift in NPGO has altered the relationship between NPGO-copepod abundance in the NCC. This change is reflected in both northern and southern copepod abundance although the magnitude and direction of the changing relationship is different across grouping. During the 1996 - 2013 era, southern copepod biomass is positively associated with NPGO but this relationship weakens and becomes slightly negative during the marine heat wave era. During the 1996 - 2013 era, northern copepod biomass was negatively associated with NPGO but this relationship did not differ from 0 during the marine heat wave era. In addtion, the intercept became negative for both groups.
 
-We do not see a change in the relationship between copepods in the NCC and PDO/ENSO. This may be because:
-- the GoA and CC did not experience changes in PDO/ENSO relationships with physical forcing mechanisms (SST/SLP; Figure 4 & 5) and ocean conditions (upwelling; Figure 6) like the NCC. If the copepod abundance reflects biomass transported from other areas, we would expect it to primarily reflect changing conditions in 1) phisical- climate index relationships in the areas they are being transported from and 2) mechanisms of transport. The change in the relationships between NPGO, physical forcing mechanisms (SST/SLP), and ocean conditions (upwelling) during the marine heat wave era was observed across all regions unlike PDO/ENSO. 
+We do not see a change in the relationship between copepods in the NCC and PDO/ENSO. This may be because: - the GoA and CC did not experience changes in PDO/ENSO relationships with physical forcing mechanisms (SST/SLP; Figure 4 & 5) and ocean conditions (upwelling; Figure 6) like the NCC. If the copepod abundance reflects biomass transported from other areas, we would expect it to primarily reflect changing conditions in 1) phisical- climate index relationships in the areas they are being transported from and 2) mechanisms of transport. The change in the relationships between NPGO, physical forcing mechanisms (SST/SLP), and ocean conditions (upwelling) during the marine heat wave era was observed across all regions unlike PDO/ENSO.
 
 ##### Northern Copepod and Climate Indices
 
@@ -855,19 +840,25 @@ We do not see a change in the relationship between copepods in the NCC and PDO/E
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
-  select(Year_lag, region, season, seasonal_copepod_northern, annual_copepod_northern,period, seasonal_PDO)%>%
+climpdo <- climate_dat_cop%>%filter(season=="Spring")%>%
+  select(Year_lag, region,period,  seasonal_PDO)%>%
     distinct()%>%
   filter(Year_lag<2023)
 
+coppdo <- climate_dat_cop%>%filter(season=="Summer")%>%
+  select(Year_lag, region, period,seasonal_copepod_northern, annual_copepod_northern)%>%
+    distinct()%>%
+  filter(Year_lag<2023)%>%
+  left_join(climpdo)
+
 #count(winter%>%filter(region=='GoA')$seasonal_NPH==0)
 
-N <- length(winter$period)
+N <- length(coppdo$period)
 NP <- 2
-P<- as.numeric(as.factor(winter$period))
+P<- as.numeric(as.factor(coppdo$period))
 K <- 1
-y <- winter$seasonal_copepod_northern
-x<-data.frame(winter$seasonal_PDO)
+y <- coppdo$seasonal_copepod_northern
+x<-data.frame(coppdo$seasonal_PDO)
 data <- list(N = N, #total number of opservations
              NP=NP, #total number of time periods
              P = P, #time period pointer vector
@@ -909,10 +900,10 @@ scaled.anomaly.pdo<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1989 - 2013', '2014 - 2022'), each = 1000),1), Index=rep("PDO", 2000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
-winter$region <-factor(winter$region, levels=region.lev) 
+coppdo$region <-factor(coppdo$region, levels=region.lev) 
 
 
-ggplot(data = winter, aes(y = seasonal_copepod_northern, x =seasonal_PDO,col=period)) +
+ggplot(data = coppdo, aes(y = seasonal_copepod_northern, x =seasonal_PDO,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
@@ -961,19 +952,26 @@ ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period))
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
-  select(Year_lag, region, season, seasonal_copepod_northern, annual_copepod_northern,period, seasonal_ONI)%>%
+climpdo <- climate_dat_cop%>%filter(season=="Spring")%>%
+  select(Year_lag, region,period,  seasonal_ONI)%>%
     distinct()%>%
   filter(Year_lag<2023)
 
+coponi <- climate_dat_cop%>%filter(season=="Summer")%>%
+  select(Year_lag, region, period,seasonal_copepod_northern, annual_copepod_northern)%>%
+    distinct()%>%
+  filter(Year_lag<2023)%>%
+  left_join(climpdo)
+
+
 #count(winter%>%filter(region=='GoA')$seasonal_NPH==0)
 
-N <- length(winter$period)
+N <- length(coponi$period)
 NP <- 2
-P<- as.numeric(as.factor(winter$period))
+P<- as.numeric(as.factor(coponi$period))
 K <- 1
-y <- winter$seasonal_copepod_northern
-x<-data.frame(winter$seasonal_ONI)
+y <- coponi$seasonal_copepod_northern
+x<-data.frame(coponi$seasonal_ONI)
 data <- list(N = N, #total number of opservations
              NP=NP, #total number of time periods
              P = P, #time period pointer vector
@@ -1014,10 +1012,10 @@ scaled.anomaly.ONI<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1989 - 2013', '2014 - 2022'), each = 1000),1), Index=rep("ONI", 2000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
-winter$region <-factor(winter$region, levels=region.lev) 
+coponi$region <-factor(coponi$region, levels=region.lev) 
 
 
-ggplot(data = winter, aes(y = seasonal_copepod_northern, x =seasonal_ONI,col=period)) +
+ggplot(data = coponi, aes(y = seasonal_copepod_northern, x =seasonal_ONI,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
@@ -1066,19 +1064,26 @@ ggplot(scaled.anomaly.ONI, aes(y = beta, x=alpha,fill = period,colour = period))
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
-  select(Year_lag, region, season, seasonal_copepod_northern, annual_copepod_northern,period, seasonal_NPH)%>%
+climpdo <- climate_dat_cop%>%filter(season=="Spring")%>%
+  select(Year_lag, region,period,  seasonal_NPH)%>%
     distinct()%>%
   filter(Year_lag<2023)
 
-#count(winter%>%filter(region=='GoA')$seasonal_NPH==0)
+copnph <- climate_dat_cop%>%filter(season=="Summer")%>%
+  select(Year_lag, region, period,seasonal_copepod_northern, annual_copepod_northern)%>%
+    distinct()%>%
+  filter(Year_lag<2023)%>%
+  left_join(climpdo)
 
-N <- length(winter$period)
+
+#count(copnph%>%filter(region=='GoA')$seasonal_NPH==0)
+
+N <- length(copnph$period)
 NP <- 2
-P<- as.numeric(as.factor(winter$period))
+P<- as.numeric(as.factor(copnph$period))
 K <- 1
-y <- winter$seasonal_copepod_northern
-x<-data.frame(winter$seasonal_NPH)
+y <- copnph$seasonal_copepod_northern
+x<-data.frame(copnph$seasonal_NPH)
 data <- list(N = N, #total number of opservations
              NP=NP, #total number of time periods
              P = P, #time period pointer vector
@@ -1119,10 +1124,10 @@ scaled.anomaly.NPH<- scaled.anomaly%>%
   bind_cols(period=rep(rep(c('1989 - 2013', '2014 - 2022'), each = 1000),1), Index=rep("NPH", 2000))%>%
   rename(alpha=tempalpha, beta = tempbeta)
 
-winter$region <-factor(winter$region, levels=region.lev) 
+copnph$region <-factor(copnph$region, levels=region.lev) 
 
 
-ggplot(data = winter, aes(y = seasonal_copepod_northern, x =seasonal_NPH,col=period)) +
+ggplot(data = copnph, aes(y = seasonal_copepod_northern, x =seasonal_NPH,col=period)) +
     facet_wrap(.~region, ncol = 4, scales='free') +
   geom_point(size=0.75,aes(col=period)) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
@@ -1171,7 +1176,7 @@ ggplot(scaled.anomaly.NPH, aes(y = beta, x=alpha,fill = period,colour = period))
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
+winter <- climate_dat_cop%>%filter(season=="Summer")%>%
   select(Year_lag, region, season, seasonal_copepod_northern, annual_copepod_northern,period, seasonal_NPGO)%>%
     distinct()%>%
   filter(Year_lag<2023)
@@ -1274,7 +1279,6 @@ scaled.anomaly.ncop <- rbind(scaled.anomaly.NPH, scaled.anomaly.pdo, scaled.anom
   add_column(Copepod="Northern Copepod")
 ```
 
-
 ##### Southern Copepod and Climate Indices
 
 ```{r copSpdo, fig.height = 2.5, fig.width =7}
@@ -1282,7 +1286,7 @@ scaled.anomaly.ncop <- rbind(scaled.anomaly.NPH, scaled.anomaly.pdo, scaled.anom
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
+winter <- climate_dat_cop%>%filter(season=="Summer")%>%
   select(Year_lag, region, season, seasonal_copepod_southern, annual_copepod_northern,period, seasonal_PDO)%>%
     distinct()%>%
   filter(Year_lag<2023)
@@ -1387,7 +1391,7 @@ ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period))
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
+winter <- climate_dat_cop%>%filter(season=="Summer")%>%
   select(Year_lag, region, season, seasonal_copepod_southern, annual_copepod_southern,period, seasonal_ONI)%>%
     distinct()%>%
   filter(Year_lag<2023)
@@ -1487,13 +1491,12 @@ ggplot(scaled.anomaly.ONI, aes(y = beta, x=alpha,fill = period,colour = period))
 
 ```
 
-
 ```{r copSNPGO, fig.height = 2.5, fig.width =7}
 #| echo: false
 #| warning: false
 #| message: false
 #| include: false
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
+winter <- climate_dat_cop%>%filter(season=="Summer")%>%
   select(Year_lag, region, season, seasonal_copepod_southern, annual_copepod_southern,period, seasonal_NPGO)%>%
     distinct()%>%
   filter(Year_lag<2023)
@@ -1600,7 +1603,7 @@ ggplot(scaled.anomaly.NPGO, aes(y = beta, x=alpha,fill = period,colour = period)
 #| message: false
 #| include: false
 
-winter <- climate_dat_cop%>%filter(season=="Spring")%>%
+winter <- climate_dat_cop%>%filter(season=="Summer")%>%
   select(Year_lag, region, season, seasonal_copepod_southern, annual_copepod_northern,period, seasonal_NPH)%>%
     distinct()%>%
   filter(Year_lag<2023)
@@ -1701,7 +1704,6 @@ scaled.anomaly.scop <- rbind(scaled.anomaly.NPH, scaled.anomaly.pdo, scaled.anom
   add_column(Copepod="Southern Copepod" )
 ```
 
-
 ```{r fullplotNcop, fig.height = 10, fig.width =8}
 #| echo: false
 #| warning: false
@@ -1758,6 +1760,236 @@ ggplot(data = cop, aes(x = BiomassAnomaly, y =Index_Value,col=period)) +
   ggtitle("Winter")
 
 ```
-**Figure 17**: Reproduced from Mike Jacox for reference
 
-**Preliminary Conclusions**: Our results show distinct spatial patterns in SLP and SST since 2000 compared to the pre-2000 record with an exceptional pattern of SST from 2014 - 2022 that had not been observed prior to 1996. Spatial patterns of SLP are associated with weak Aleutian Low and La Nina conditions that have also been observed in recent years. There is evidence of non-stationary relationships between upwelling, climate indices and forcing mechanisms, particularly during the MHW era in the Northern California Current. We found that the relationship between SST-upwelling and SLP-upwelling reversed from 2013 - 2022 in the NCC. We observed similar reversals between ENSO-upwelling and PDO-upwelling in the NCC during the MHW era. We also find evidence of moderate strengthening relationships between ENSO-upwelling and PDO-upwelling in the CCC and SCC driven by changes in the SST and SLP upwelling relationships in these regions. Altogether, these results indicate changing environmental meaning of climate indices, particularly ENSO and PDO, driven by global trends in forcing mechanisms, specifically SLP and SST. Further, we show evidence of prolonged and persistent change in SLP and SST since 2000 and at least since 2014. Applications of climate indices in ecological analyses should consider their environmental and ecological meanings differ from historical interpretations during the MHW era.
+
+
+```{r rreaspdo, fig.height = 2.5, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+#| include: false
+dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%rename(period=era)
+
+pdo <- dfa%>%filter(season=="Spring")%>%
+  select(Year_lag,period, season, seasonal_PDO)%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+dfapdo <- dfa%>%filter(trend=="RREAS")%>%
+  select(Year_lag, period,estimate)%>%
+    distinct()%>%
+  filter(Year_lag<2023)%>%
+  left_join(pdo)
+
+#count(winter%>%filter(region=='GoA')$seasonal_NPH==0)
+
+N <- length(dfapdo$period)
+NP <- 3
+P<- as.numeric(as.factor(dfapdo$period))
+K <- 1
+y <- dfapdo$estimate
+x<-data.frame(dfapdo$seasonal_PDO)
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:3,]%>%
+  add_column(
+             period=rep(c("1983 - 1988","1989 - 2013","2014 - 2022"),1))
+
+betaP<-posterior[4:6,]%>%
+  add_column(
+             period=rep(c("1983 - 1988","1989 - 2013","2014 - 2022"),1))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly.pdo<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c("1983 - 1988",'1989 - 2013', '2014 - 2022'), each = 1000),1), Index=rep("PDO", 3000))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+
+ggplot(data = dfapdo, aes(y = estimate, x =seasonal_PDO,col=period)) +
+    #facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_y_continuous(name = "Northern Copepod Biomass Anomaly") +
+  scale_color_manual(values =  col[1:3], labels=c("1983 - 1988",'1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+ggplot(scaled.anomaly.pdo, aes(x = beta, fill = period)) +
+  theme_bw() +
+ # facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly.pdo, aes(x = alpha, fill = period)) +
+  theme_bw() +
+ # facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3]), labels=c("1967-1988",  "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+
+
+ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+ # facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3]),  labels=c("1983-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1],col[2], col[3]),  labels=c("1983-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  #geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
+
+```
+
+
+```{r rreaspdo, fig.height = 2.5, fig.width =7}
+#| echo: false
+#| warning: false
+#| message: false
+#| include: false
+dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%rename(period=era)
+
+dat <- dfa%>%filter(season=="Spring", trend=="CALCOFI")%>%
+    distinct()%>%
+  filter(Year_lag<2023)
+
+bayeslinmod(dfa, which(colnames(dat) == "seasonal_PDO"),  which(colnames(dat) == "estimate"))
+
+bayeslinmod <- function(dat, index,trend) { 
+  scaled.anomaly <- NULL
+N <- length(dat$period)
+NP <- 3
+P<- as.numeric(as.factor(dat$period))
+K <- 1
+y <- dat[trend]
+x<-dat[index]
+data <- list(N = N, #total number of opservations
+             NP=NP, #total number of time periods
+             P = P, #time period pointer vector
+             K = K,#number of covariates, starting with one but can add for final model structure
+             x=x, #Upwelling
+             y=y #response variable
+)
+
+bhfit <- stan(
+  file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+  data = data,
+  chains = n_chains,
+  warmup = warmups,
+  iter = total_iterations,
+  cores = n_cores,
+  refresh = 250,
+  control = list(max_treedepth = max_treedepth,
+                 adapt_delta = adapt_delta))
+      
+}
+
+
+
+
+
+
+
+
+
+
+
+posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+
+alphaP<-posterior[1:3,]%>%
+  add_column(
+             period=rep(c("1983 - 1988","1989 - 2013","2014 - 2022"),1))
+
+betaP<-posterior[4:6,]%>%
+  add_column(
+             period=rep(c("1983 - 1988","1989 - 2013","2014 - 2022"),1))
+n<- 1000
+scaled.anomaly <- NULL
+for(i in 1:NP){
+tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+}
+
+scaled.anomaly.pdo<- scaled.anomaly%>%
+  bind_cols(period=rep(rep(c("1983 - 1988",'1989 - 2013', '2014 - 2022'), each = 1000),1), Index=rep("PDO", 3000))%>%
+  rename(alpha=tempalpha, beta = tempbeta)
+
+
+ggplot(data = dfapdo, aes(y = estimate, x =seasonal_PDO,col=period)) +
+    #facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_point(size=0.75,aes(col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_y_continuous(name = "Northern Copepod Biomass Anomaly") +
+  scale_color_manual(values =  col[1:3], labels=c("1983 - 1988",'1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
+ggplot(scaled.anomaly.pdo, aes(x = beta, fill = period)) +
+  theme_bw() +
+ # facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), labels=c("1967-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+ggplot(scaled.anomaly.pdo, aes(x = alpha, fill = period)) +
+  theme_bw() +
+ # facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3]), labels=c("1967-1988",  "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept (scaled anomaly)",
+       y = "Posterior density")
+
+
+ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period)) +
+  theme_bw() +
+  stat_ellipse(geom = "polygon",alpha=0.4)+
+  stat_ellipse(size=1.5)+
+ # facet_wrap(.~region, ncol = 4) +
+ # geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3]),  labels=c("1983-1988", "1989-2013", "2014-2022")) +
+  scale_colour_manual(values = c(col[1],col[2], col[3]),  labels=c("1983-1988", "1989-2013", "2014-2022")) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  #geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "Intercept",y = "Slope")
+
+```

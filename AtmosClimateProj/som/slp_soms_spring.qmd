@@ -32,7 +32,7 @@ here::i_am("som/slp_soms_winter.qmd")
 #| warning: false
 #| message: false
 # start by loading NE Pacific SST
-nc <- nc_open(here("som/copernicus_jun27.nc"))
+nc <- nc_open(here("som/copernicus_jul10.nc"))
 ```
 
 ```{r getcoords}
@@ -71,7 +71,7 @@ var_name = "msl"
 Determining the dimensions (nodes)
 
 ```{r}
-dim <- c(3,2)
+dim <- c(2,2)
 ```
 
 ```{r extract}
@@ -169,7 +169,14 @@ fit <- trainSOM(x.data = scale(X_spring), dimension = dim, verbose = FALSE, nb.s
 output <- data.frame(spring_year = spring_years,
                      cluster = fit$clustering)
 
+era3 <- output%>%filter(spring_year >2012)%>%group_by(cluster)%>%summarise(n=n())%>%mutate(percent=n/sum(n))
+era2 <- output%>%filter(spring_year >1988 & spring_year<2013)%>%group_by(cluster)%>%summarise(n=n())%>%mutate(percent=n/sum(n))
+era1 <- output%>%filter(spring_year <1989& spring_year<1966)%>%group_by(cluster)%>%summarise(n=n())%>%mutate(percent=n/sum(n))
 knitr::kable(output)
+
+print(era1)
+print(era2)
+print(era3)
 ```
 
 ```{r}

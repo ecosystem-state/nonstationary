@@ -544,8 +544,6 @@ ggplot() +
 
 ```
 
-
-
 ```{r slpcorrindex, fig.height = 11, fig.width =11}
 #| echo: false
 #| warning: false
@@ -587,6 +585,7 @@ ggplot() +
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 
 ```
+
 ### Upwelling and Climate Indices
 
 #### Objective 3
@@ -595,18 +594,17 @@ ggplot() +
 
 **Approach**: Bayesian linear model with region-level factors (GoA, NCC, CCC, SCC) delineated based on Figure 1 using breakpoints for 1967 - 1988; 1989 - 2013; 2014 - 2023.
 
-**Summary**:
-*PDO*:  PDO tends to be most associated with vertical transport and isopycnal depth in the NCC. It is also associated with source depth and density in the NCC and CCC (Figure 17). Generally, PDO is negatively associated with upwelling. Historically, we find evidence of this negative relationship historically across all of the California Current (Figure 13b) but we find a dramatic change in the relationship between upwelling and PDO in the NCC during the MHW era (Figure 13) where the the correlation switches from negative to positive. We do not find evidence for a MHW change in the other regions. This finding is in agreement with the correlation analysis, where we find a complete reversal of the slope coefficients between NCC upwelling and SST in the MHW era compared to the earlier periods (Figure 11).
+**Summary**: *PDO*: PDO tends to be most associated with vertical transport and isopycnal depth in the NCC. It is also associated with source depth and density in the NCC and CCC (Figure 17). Generally, PDO is negatively associated with upwelling. Historically, we find evidence of this negative relationship historically across all of the California Current (Figure 13b) but we find a dramatic change in the relationship between upwelling and PDO in the NCC during the MHW era (Figure 13) where the the correlation switches from negative to positive. We do not find evidence for a MHW change in the other regions. This finding is in agreement with the correlation analysis, where we find a complete reversal of the slope coefficients between NCC upwelling and SST in the MHW era compared to the earlier periods (Figure 11).
 
-*NPGO*: NPGO is positively associated with upwelling and is more associated with vertical transport in the SCC and source depth in the SCC and NCC (Figure 17). We find the relationship between upwelling and NPGO was similar during MHW era and the historic era (1967 - 1988) and did not differ substantially from 0 (weakly negative slope; Figure 13) indicating NPGO-upwelling not closely coupled during this period. However, the relationship was strongly coupled with a positive slope during the 1989 - 2013 period. Notably, NPGO values have been exceptionally negative during the MHW era - including the 3 most negative observations - resulting in a change in the intercept of the relationship. 
+*NPGO*: NPGO is positively associated with upwelling and is more associated with vertical transport in the SCC and source depth in the SCC and NCC (Figure 17). We find the relationship between upwelling and NPGO was similar during MHW era and the historic era (1967 - 1988) and did not differ substantially from 0 (weakly negative slope; Figure 13) indicating NPGO-upwelling not closely coupled during this period. However, the relationship was strongly coupled with a positive slope during the 1989 - 2013 period. Notably, NPGO values have been exceptionally negative during the MHW era - including the 3 most negative observations - resulting in a change in the intercept of the relationship.
 
 *ENSO*: The relationship between ENSO-upwelling is similar to that of PDO-upwelling. Specifically, we find a consistent, negative relationship in the California Current, with a strengthening of that relationship in SCC and CCC consistent with the correlation analysis results. Similar to PDO, we find a reversal of the slope coefficient during the MHW era from negative to positive in NCC.
 
-*NPI*: we do not find any strong relationships between NPI-upwelling. We do find a reversal of the relationship during the MHW era compared to the earliest period (1967-1988) for the GoA and NCC and a strengthening (more positive) of the association in CCC and SCC (Figure 16) consistent with the correlation analysis of SLP, but posterior distributions of the slope overlap with 0 (Figure 12). We do find a more positive intercept, consistent with an increase of index values representative of a weakening of the Aleutian Low during the MHW era. 
+*NPI*: we do not find any strong relationships between NPI-upwelling. We do find a reversal of the relationship during the MHW era compared to the earliest period (1967-1988) for the GoA and NCC and a strengthening (more positive) of the association in CCC and SCC (Figure 16) consistent with the correlation analysis of SLP, but posterior distributions of the slope overlap with 0 (Figure 12). We do find a more positive intercept, consistent with an increase of index values representative of a weakening of the Aleutian Low during the MHW era.
 
 #### PDO - Upwelling
 
-**Figure 13**: Relationship between spring upwelling and  spring PDO based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept
+**Figure 13**: Relationship between spring upwelling and spring PDO based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept
 
 ```{r PDO, fig.height = 2.5, fig.width =7}
 #| echo: false
@@ -1064,7 +1062,6 @@ ggplot(scaled.anomaly.nph, aes(y = beta, x=alpha,fill = period,colour = period))
   labs(x = "Intercept",y = "Slope")
 ```
 
-
 ```{r fullplot, fig.height = 7, fig.width =7}
 #| echo: false
 #| warning: false
@@ -1125,6 +1122,7 @@ ggplot(data = clim, aes(x = stand_bakun_seasonally, y =Index_Value,col=period)) 
   theme(plot.title = element_text(hjust = 0.5))+
   ggtitle("Winter")
 ```
+
 **Figure 17**: Reproduced from Mike Jacox for reference
 
-**Preliminary Conclusions**: Our results show distinct spatial patterns in SLP and SST since 2000 compared to the pre-2000 record with an exceptional pattern of SST from 2014 - 2022 that had not been observed prior to 1996. Spatial patterns of SLP are associated with weak Aleutian Low and La Nina conditions that have also been observed in recent years. There is evidence of non-stationary relationships between upwelling, climate indices and forcing mechanisms, particularly during the MHW era in the Northern California Current. We found that the relationship between SST-upwelling and SLP-upwelling reversed from 2013 - 2022 in the NCC. We observed similar reversals between ENSO-upwelling and PDO-upwelling in the NCC during the MHW era. We also find evidence of moderate strengthening relationships between ENSO-upwelling and PDO-upwelling in the CCC and SCC driven by changes in the SST and SLP upwelling relationships in these regions. Altogether, these results indicate changing environmental meaning of climate indices, particularly ENSO and PDO, driven by global trends in forcing mechanisms, specifically SLP and SST. Further, we show evidence of prolonged and persistent change in SLP and SST since 2000 and at least since 2014. Applications of climate indices in ecological analyses should consider their environmental and ecological meanings differ from historical interpretations during the MHW era. 
+**Preliminary Conclusions**: Our results show distinct spatial patterns in SLP and SST since 2000 compared to the pre-2000 record with an exceptional pattern of SST from 2014 - 2022 that had not been observed prior to 1996. Spatial patterns of SLP are associated with weak Aleutian Low and La Nina conditions that have also been observed in recent years. There is evidence of non-stationary relationships between upwelling, climate indices and forcing mechanisms, particularly during the MHW era in the Northern California Current. We found that the relationship between SST-upwelling and SLP-upwelling reversed from 2013 - 2022 in the NCC. We observed similar reversals between ENSO-upwelling and PDO-upwelling in the NCC during the MHW era. We also find evidence of moderate strengthening relationships between ENSO-upwelling and PDO-upwelling in the CCC and SCC driven by changes in the SST and SLP upwelling relationships in these regions. Altogether, these results indicate changing environmental meaning of climate indices, particularly ENSO and PDO, driven by global trends in forcing mechanisms, specifically SLP and SST. Further, we show evidence of prolonged and persistent change in SLP and SST since 2000 and at least since 2014. Applications of climate indices in ecological analyses should consider their environmental and ecological meanings differ from historical interpretations during the MHW era.

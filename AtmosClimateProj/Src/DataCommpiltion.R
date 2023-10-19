@@ -317,7 +317,7 @@ copepod_seasonal<-copepod_seasonal%>%
 
 climate_dat <- bakun_time%>%
   merge(PDO, by=c('Month', 'Year_lag'))%>%
-  merge(PDO_annual, by=c('Year_lag'))%>%
+  # merge(PDO_annual, by=c('Year_lag'))%>%
   merge(PDO_seasonal, by=c('season', 'Year_lag'))%>%
   merge(NPH, by=c('Month', 'Year_lag'))%>%
   merge(NPH_annual, by=c('Year_lag'))%>%
@@ -348,6 +348,8 @@ saveRDS(climate_dat, file = here('data/physical/climate_dat_upwelling.rds'))
 
 
 ### Compile  with Upwelling Indices and Copepod into Dataframe ####
+dfa.trend<-readRDS("data/biological/dfa.trends.rds")%>%
+  rename(Year_lag=time)
 
 climate_dat <- PDO_seasonal%>%
   merge(PDO_annual, by=c('Year_lag'))%>%
@@ -356,6 +358,41 @@ climate_dat <- PDO_seasonal%>%
   merge(NPH_annual, by=c('Year_lag'))%>%
   merge(NPH_seasonal, by=c('season', 'Year_lag'))%>%
  # merge(ONI, by=c('Month', 'Year_lag'))%>%
+  merge(ONI_annual, by=c('Year_lag'))%>%
+  merge(ONI_seasonal, by=c('season', 'Year_lag'))%>%
+  # merge(copepod%>%select(Year_lag, period), by=c('Year_lag'))%>%
+  merge(dfa.trend, by=c('Year_lag'))%>%
+  #left_join(NPGO, by=c('Month', 'Year_lag'))%>%
+  left_join(NPGO_annual, by=c('Year_lag'))%>%
+  left_join(NPI_seasonal, by=c('season', 'Year_lag'))%>%
+  left_join(NPGO_seasonal, by=c('season', 'Year_lag'))%>%
+  #add_column(region='NCC')%>%
+  distinct()
+
+
+climate_dat <- climate_dat%>%
+  select(Year_lag, season,estimate, lower, upper, trend, era,
+         annual_PDO, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI,
+         annual_NPH, seasonal_NPH,NPI_stand)%>%
+  distinct()%>%
+  filter(Year_lag<2023)
+
+ggplot(climate_dat, aes(x=seasonal_PDO, y=estimate))+
+  geom_point()
+
+saveRDS(climate_dat, file = here('data/physical/climate_dat_dfa.rds'))
+
+
+
+### Compile  with Upwelling Indices and Copepod into Dataframe ####
+
+climate_dat <- PDO_seasonal%>%
+  merge(PDO_annual, by=c('Year_lag'))%>%
+  #merge(PDO, by=c('Year_lag'))%>%
+  #merge(NPH, by=c('Month', 'Year_lag'))%>%
+  merge(NPH_annual, by=c('Year_lag'))%>%
+  merge(NPH_seasonal, by=c('season', 'Year_lag'))%>%
+  # merge(ONI, by=c('Month', 'Year_lag'))%>%
   merge(ONI_annual, by=c('Year_lag'))%>%
   merge(ONI_seasonal, by=c('season', 'Year_lag'))%>%
   # merge(copepod%>%select(Year_lag, period), by=c('Year_lag'))%>%
@@ -381,9 +418,6 @@ ggplot(climate_dat, aes(x=seasonal_PDO, y=seasonal_NPH))+
   geom_point()
 
 saveRDS(climate_dat, file = here('data/physical/climate_dat_cop.rds'))
-
-
-
 
 
 
