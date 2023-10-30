@@ -67,7 +67,8 @@ postplot <- function(dat, param){
 postplot(CALCOFI, CALCOFI$beta)
 ##### DFA Trend Model Runs ####
 season<- "Winter"
-dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%rename(period=era)
+dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%rename(period=era)%>%
+  mutate(period=ifelse(Year_lag<=1988,1, ifelse(Year_lag>2004,3,2)))
 dat <- dfa%>%select(estimate, Year_lag, lower, upper,trend,season)%>%
   mutate(Year_lag = Year_lag+1)%>%
   rename(estimateoffset1=estimate, loweroffset1=lower, upperoffset1=upper)%>%
