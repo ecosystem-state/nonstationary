@@ -1183,7 +1183,13 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
 
-
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_PDO,col=period, label=Year_lag)) +
+    facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_text() +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
 
 ggplot(scaled.anomaly, aes(y = beta, x=alpha,fill = period,colour = period)) +
   theme_bw() +
@@ -1600,6 +1606,15 @@ ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_NPGO,col=perio
   scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
   scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
   theme_bw()
+
+ggplot(data = winter, aes(x = stand_bakun_seasonally, y =seasonal_NPGO,col=period, label=Year_lag)) +
+    facet_wrap(.~region, ncol = 4, scales='free') +
+  geom_text() +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_x_continuous(name = "Upwelling (Bakun 1˚ 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2013', '2014 - 2022'))+
+  theme_bw()
+
 
 
 ggplot(scaled.anomaly, aes(x = beta, fill = period)) +

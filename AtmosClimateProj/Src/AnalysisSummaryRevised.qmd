@@ -1761,8 +1761,6 @@ ggplot(data = cop, aes(x = BiomassAnomaly, y =Index_Value,col=period)) +
 
 ```
 
-
-
 ```{r rreaspdo, fig.height = 2.5, fig.width =7}
 #| echo: false
 #| warning: false
@@ -1874,7 +1872,6 @@ ggplot(scaled.anomaly.pdo, aes(y = beta, x=alpha,fill = period,colour = period))
   labs(x = "Intercept",y = "Slope")
 
 ```
-
 
 ```{r rreaspdo, fig.height = 2.5, fig.width =7}
 #| echo: false
