@@ -1,6 +1,27 @@
+library(ncdf4)
+library(chron)
+library(tidyverse)
+library(kohonen) # fitting
+library(aweSOM) # plotting
+library(SOMbrero) # plotting
+library(paletteer) #colors
+library(PNWColors) #more colors
+library(here) #navigating folders
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(maps)       #basic mapping functions and some data
+library(rstan)
+library(mapdata)    #some additional hires data
+library(maptools)   #useful tools such as reading shapefiles
+library(mapproj)
+library(PBSmapping)
+set.seed(1234)
+
+
 ##### Writing Bayes DFA model function ####
 warmups <- 1000
-total_iterations <- 3000
+total_iterations <- 10000
 max_treedepth <-  10
 n_chains <-  3
 n_cores <- 4
@@ -40,15 +61,15 @@ bayeslinmod <- function(dat, ind,xyz) {
   betaP<-posterior[4:6,]%>%
     add_column(
       period=rep(c("1983 - 1988","1989 - 2013","2014 - 2022"),1))
-  n<- 1000
+  n<- 10000
   for(i in 1:NP){
     tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
     tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
     scaled <-rbind(scaled,cbind(tempalpha, tempbeta))
   }
   scaled.anom<<- scaled%>%
-    bind_cols(period=rep(rep(c(1,2, 3), each = 1000),1), Index=rep(colnames(dat[ind]), 3000),
-              yfirst=rep(min(dat$Year_lag), 3000),ylast=rep(max(dat$Year_lag), 3000))%>%
+    bind_cols(period=rep(rep(c(1,2, 3), each = n),1), Index=rep(colnames(dat[ind]), n*3),
+              yfirst=rep(min(dat$Year_lag), n*3),ylast=rep(max(dat$Year_lag), n*3))%>%
     rename(alpha=tempalpha, beta = tempbeta)
 }
 
@@ -64,7 +85,7 @@ postplot <- function(dat, param){
          y = "Posterior density")
 }
 
-postplot(CALCOFI, CALCOFI$beta)
+season<- "Spring"
 ##### DFA Trend Model Runs ####
 climate_dat_cop<-readRDS(here('data/physical/climate_dat_cop.rds'))
 dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%
@@ -74,7 +95,7 @@ dat <- dfa%>%select(estimate, Year_lag, lower, upper,trend,season)%>%
   rename(estimateoffset1=estimate, loweroffset1=lower, upperoffset1=upper)%>%
   left_join(dfa, by=c('trend', 'Year_lag','season'))
 
-dat.long<- dat%>%filter(season=="Spring")%>%
+dat.long<- dat%>%filter(season=="Winter")%>%
   select(Year_lag, season, estimate,trend,
          seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
   rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
@@ -82,7 +103,7 @@ dat.long<- dat%>%filter(season=="Spring")%>%
   pivot_longer(!c(Year_lag, season, estimate,trend), 
                names_to = "Index_Name", values_to = "Index_Value")
 
-dat.lm<-climate_dat_cop%>%filter(season=="Spring")%>%
+dat.lm<-climate_dat_cop%>%filter(season=="Winter")%>%
   select(Year_lag, season, seasonal_copepod_northern,seasonal_copepod_southern,
          seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
   rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
@@ -110,7 +131,7 @@ survey.lm<-ggplot(data = dat.lm, aes(y = estimate, x =Index_Value,col=as.factor(
   theme_bw()+
   xlab("Climate Index Value")+
   theme(plot.title = element_text(hjust = 0.5))+
-  ggtitle("Spring")
+  ggtitle(season)
 
 pdf(file = "Output/Figures/biological.lm.pdf",   # The directory you want to save the file in
     width = 8.5, # The width of the plot in inches
@@ -118,8 +139,8 @@ pdf(file = "Output/Figures/biological.lm.pdf",   # The directory you want to sav
 survey.lm
 dev.off()
 ###### CALCOFI ######
-season<- "Spring"
-data <- dat%>%filter(season==season, trend=="CALCOFI")%>%
+
+data <- dat%>%filter(season=="Winter", trend=="CALCOFI")%>%
   distinct()%>%
   filter(Year_lag<2023)
 
@@ -136,6 +157,27 @@ Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO"
 
 postplot(CALCOFI, CALCOFI$beta)
 postplot(CALCOFI, CALCOFI$alpha)
+
+ratio.beta <- cbind(CALCOFI.beta=c(CALCOFI%>%filter(period=='3')%>%select(beta)/CALCOFI%>%filter(period=='2')%>%select(beta)),
+                    CALCOFI%>%filter(period=='3')%>%select(Index))%>%
+  rename(CALCOFI=beta)
+ratio.alpha<-cbind(CALCOFI.alpha=CALCOFI%>%filter(period=='3')%>%select(alpha)/CALCOFI%>%filter(period=='2')%>%select(alpha), 
+                   CALCOFI%>%filter(period=='3')%>%select(Index))%>%
+  rename(CALCOFI=alpha)
+
+index.names <- unique(CALCOFI$Index)
+period.names <- unique(CALCOFI$period)
+overlap.CALCOFI <- NA
+  for(i in 1:4){
+    temp <- CALCOFI%>%filter(Index==index.names[i])%>%select(beta, period)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%select(beta),temp%>%filter(period==2)%>%select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%select(beta),temp%>%filter(period==3)%>%select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%select(beta),temp%>%filter(period==2)%>%select(beta)), period1=c(3), period2=c(2), Index=index.names[i])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.CALCOFI <-rbind(temp2,overlap.CALCOFI)
+  }
+overlap.CALCOFI 
+
 #running models with 1-year offset
 
 CALCOFIoffset <-NULL
@@ -155,7 +197,7 @@ postplot(CALCOFIoffset, CALCOFIoffset$alpha)
 
 ###### RREAS ######
 
-data <- dat%>%filter(season==season, trend=="RREAS")%>%
+data <- dat%>%filter(season=="Winter", trend=="RREAS")%>%
   distinct()%>%
   filter(Year_lag<2023)
 
@@ -174,6 +216,17 @@ RREAS<-RREAS%>%mutate(survey="RREAS (CCC)",
 postplot(RREAS, RREAS$beta)
 postplot(RREAS, RREAS$alpha)
 
+index.names <- unique(RREAS$Index)
+period.names <- unique(RREAS$period)
+overlap.RREAS <- NA
+for(i in 1:4){
+  temp <- RREAS%>%filter(Index==index.names[i])%>%select(beta, period)
+  ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%select(beta),temp%>%filter(period==2)%>%select(beta)), period1=c(3), period2=c(1), Index=index.names[i])
+  temp2<-rbind(ov3)
+  overlap.RREAS <-rbind(temp2,overlap.RREAS)
+}
+overlap.RREAS
+overlap.CALCOFI
 
 RREASoffset <-NULL
 columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
@@ -190,6 +243,7 @@ RREASoffset<-RREASoffset%>%mutate(survey="RREAS (CCC)",
 postplot(RREASoffset, RREASoffset$beta)
 postplot(RREASoffset, RREASoffset$alpha)
 
+colnames(ratio.beta)<-c("CALCOFI", "Index", "RREAS")
 #### Copepod Model Runs ####
 bayeslinmod_cop <- function(dat, ind,xyz) {
   N <- length(dat$period)
@@ -225,7 +279,7 @@ bayeslinmod_cop <- function(dat, ind,xyz) {
   betaP<-posterior[3:4,]%>%
     add_column(
       period=rep(c("2","3"),1))
-  n<- 1000
+  n<- 10000
   scaled.anomaly <- NULL
   for(i in 1:NP){
     tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
@@ -234,22 +288,23 @@ bayeslinmod_cop <- function(dat, ind,xyz) {
   }
   
   scaled.anom<<- scaled.anomaly%>%
-    bind_cols(period=rep(rep(c('2', '3'), each = 1000),1), Index = rep(colnames(dat[ind]), 2000))%>%
+    bind_cols(period=rep(rep(c('2', '3'), each = n),1), Index = rep(colnames(dat[ind]), n*2))%>%
     rename(alpha=tempalpha, beta = tempbeta)
 }
 
 
-climpdo <- climate_dat_cop%>%filter(season=="Spring")%>%
+climpdo <- climate_dat_cop%>%filter(season=="Winter")%>%
   select(Year_lag, region, seasonal_PDO,  seasonal_NPGO,  seasonal_ONI,  seasonal_NPH)%>%
   distinct()%>%
   filter(Year_lag<2023)
 
 data <- climate_dat_cop%>%filter(season=="Summer")%>%
-  select(Year_lag, region, seasonal_copepod_northern, annual_copepod_northern, 
+  select(Year_lag, region, seasonal_copepod_northern, 
          seasonal_copepod_southern)%>%
   left_join(climpdo)%>%
   distinct()%>%
-  mutate(period=ifelse(Year_lag<2013,2,3))
+  mutate(period=ifelse(Year_lag<2013,2,3))%>%
+  filter(Year_lag>1996)
 
 northern <-NULL
 columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
@@ -262,6 +317,21 @@ northern<-northern%>%mutate(survey="Northern Copepod (NCC)",
                             Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
                                                                               ifelse(Index=="seasonal_NPH", "NPH","ONI"))))
 
+
+
+index.names <- unique(northern$Index)
+period.names <- unique(northern$period)
+
+
+overlap.northern <- NA
+for(i in 1:4){
+  temp <- northern%>%filter(Index==index.names[i])%>%select(beta, period)
+  ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%select(beta),temp%>%filter(period==2)%>%select(beta)), period1=c(3), period2=c(1), Index=index.names[i])
+  temp2<-rbind(ov3)
+  overlap.northern <-rbind(temp2,overlap.northern)
+}
+overlap.northern
+
 southern <-NULL
 columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
            which(colnames(data) == "seasonal_NPH"),which(colnames(data) == "seasonal_ONI"))
@@ -272,8 +342,19 @@ for(i in 1:length(columns)){
 southern<-southern%>%mutate(survey="Southern Copepod (NCC)",
                             Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
                                                                               ifelse(Index=="seasonal_NPH", "NPH","ONI"))))
-COP<-southern%>%bind_rows(northern)%>%mutate(yfirst=1989, ylast=2023,period=as.numeric(period))
+index.names <- unique(southern$Index)
+period.names <- unique(southern$period)
+overlap.southern <- NA
+for(i in 1:4){
+  temp <- southern%>%filter(Index==index.names[i])%>%select(beta, period)
+  ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%select(beta),temp%>%filter(period==2)%>%select(beta)), period1=c(3), period2=c(1), Index=index.names[i])
+  temp2<-rbind(ov3)
+  overlap.southern <-rbind(temp2,overlap.southern)
+}
+overlap.southern
 
+
+COP<-southern%>%bind_rows(northern)%>%mutate(yfirst=1989, ylast=2023,period=as.numeric(period))
 
 
 ####### Combining data for full plots #####
@@ -359,7 +440,10 @@ dev.off()
 
 
 #### Upwelling Model Runs ####
+
+##### spring #####
 climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+season <- "Spring"
 data<- climate_dat%>%filter(season=="Spring")%>%
 #  filter(Year_lag!=2022&Year_lag!=2015)%>%
   distinct()
@@ -378,7 +462,7 @@ bayeslinmod_up <- function(dat, ind,xyz) {
                y=y #response variable
   )
   warmups <- 1000
-  total_iterations <- 3000
+  total_iterations <- 10000
   max_treedepth <-  10
   n_chains <-  3
   n_cores <- 4
@@ -403,7 +487,7 @@ bayeslinmod_up <- function(dat, ind,xyz) {
   betaP<-posterior[13:24,]%>%
     add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
                period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
-  n<- 1000
+  n<- 10000
   scaled.anomaly <- NULL
   for(i in 1:NP){
     tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
@@ -411,8 +495,8 @@ bayeslinmod_up <- function(dat, ind,xyz) {
     scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
   }
   scaled<<- scaled.anomaly%>%
-    bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = 1000),4),
-              region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = 3000)), Index = rep(colnames(dat[ind]), 12000))%>%
+    bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = n),4),
+              region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = n*3)), Index = rep(colnames(dat[ind]), 12*n))%>%
     rename(alpha=tempalpha, beta = tempbeta)
 
 }
@@ -432,6 +516,29 @@ up_post_spring<-up_post%>%
          period2 = ifelse(era==1,"1967 - 1988", ifelse(era==2, "1989 - 2012", "2013 - 2023")),
          Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
                                                            ifelse(Index=="seasonal_NPH", "NPH","ONI"))))
+index.names <- unique(up_post_spring$Index)
+region.names<-unique(up_post_spring$region)
+period.names <- unique(up_post_spring$period)
+overlap.up <- NA
+for(j in 1:4){
+  temp1 <- up_post_spring%>%filter(region==region.names[j])
+  for(i in 1:4){
+    temp <- temp1%>%filter(Index==index.names[i])%>%select(beta, period,region)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period=='1967 - 1988')%>%select(beta),temp%>%filter(period=="1989 - 2013")%>%select(beta)), period1=c(1), period2=c(2), Index=index.names[i], region=region.names[j])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period=='1967 - 1988')%>%select(beta),temp%>%filter(period=="2014 - 2022")%>%select(beta)), period1=c(1), period2=c(3), Index=index.names[i], region=region.names[j])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period=="2014 - 2022")%>%select(beta),temp%>%filter(period=="1989 - 2013")%>%select(beta)), period1=c(3), period2=c(2), Index=index.names[i], region=region.names[j])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.up <-rbind(temp2,overlap.up)
+  }
+
+}
+
+overlap.up 
+mean(na.omit(overlap.up%>%filter(period1==1&period2==3)%>%select(ov))$ov)
+sd(na.omit(overlap.up%>%filter(period1==1&period2==3)%>%select(ov))$ov)
+
+mean(na.omit(overlap.up%>%filter(period1==3&period2==2)%>%select(ov))$ov)
+sd(na.omit(overlap.up%>%filter(period1==3&period2==2)%>%select(ov))$ov)
 
 up.spring.int<-ggplot(up_post_spring%>%filter(region!="GoA"), aes(x = alpha, fill = as.factor(period2), group=as.factor(period2))) +
   theme_bw() +
@@ -491,4 +598,221 @@ pdf(file = "Output/Figures/up.lm.pdf",   # The directory you want to save the fi
     width = 8, # The width of the plot in inches
     height = 8.5)
 up.lm
+dev.off()
+
+##### winter#####
+
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+season <- "Winter"
+data<- climate_dat%>%filter(season=="Winter")%>%
+  #  filter(Year_lag!=2022&Year_lag!=2015)%>%
+  distinct()
+bayeslinmod_up <- function(dat, ind,xyz) {
+  N <- length(dat$period)
+  NP <- 12
+  P<- as.numeric(as.factor(dat$era.region))
+  K <- 1
+  y <-xyz
+  x<-dat[ind]
+  data <- list(N = N, #total number of opservations
+               NP=NP, #total number of time periods
+               P = P, #time period pointer vector
+               K = K,#number of covariates, starting with one but can add for final model structure
+               x=x, #Upwelling
+               y=y #response variable
+  )
+  warmups <- 1000
+  total_iterations <- 10000
+  max_treedepth <-  10
+  n_chains <-  3
+  n_cores <- 4
+  adapt_delta <- 0.95
+  
+  bhfit <- stan(
+    file = here::here("Src/BayesianLinearHierarchicalModels.stan"),
+    data = data,
+    chains = n_chains,
+    warmup = warmups,
+    iter = total_iterations,
+    cores = n_cores,
+    refresh = 250,
+    control = list(max_treedepth = max_treedepth,
+                   adapt_delta = adapt_delta))
+  
+  posterior<-data.frame(summary(bhfit, prob=c(0.025, 0.25,0.75, 0.975, 0.1, 0.9))$summary)
+  alphaP<-posterior[1:12,]%>%
+    add_column(region = rep(c("GoA", "NCC", "CCC","SCC"),each =3), 
+               period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+  
+  betaP<-posterior[13:24,]%>%
+    add_column(region = rep(c("GoA", "NCC","CCC", "SCC"),each =3), 
+               period=rep(c("1967 - 1988","1989 - 2013","2014 - 2022"),4))
+  n<- 10000
+  scaled.anomaly <- NULL
+  for(i in 1:NP){
+    tempalpha <- rnorm(n, alphaP$mean[i],alphaP$sd[i])
+    tempbeta <- rnorm(n, betaP$mean[i],betaP$sd[i])
+    scaled.anomaly <-rbind(scaled.anomaly,cbind(tempalpha, tempbeta))
+  }
+  scaled<<- scaled.anomaly%>%
+    bind_cols(period=rep(rep(c('1967 - 1988', '1989 - 2013', '2014 - 2022'), each = n),4),
+              region = rep(rep(c("GoA", "NCC","CCC", "SCC"),each = n*3)), Index = rep(colnames(dat[ind]), 12*n))%>%
+    rename(alpha=tempalpha, beta = tempbeta)
+  
+}
+
+columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
+           which(colnames(data) == "seasonal_NPH"),which(colnames(data) == "seasonal_ONI"))
+up_post<-NULL
+for(i in 1:length(columns)){
+  bayeslinmod_up(data, columns[i], data$stand_bakun_seasonally)
+  up_post <-rbind(up_post,scaled)
+}
+
+region.lev2 <-c("GoA", "NCC", "CCC", "SCC")
+up_post$region <-factor(up_post$region, levels=region.lev2)
+up_post_winter<-up_post%>%
+  mutate(era=as.numeric(as.factor(period)),
+         period2 = ifelse(era==1,"1967 - 1988", ifelse(era==2, "1989 - 2012", "2013 - 2023")),
+         Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                           ifelse(Index=="seasonal_NPH", "NPH","ONI"))))
+index.names <- unique(up_post_winter$Index)
+region.names<-unique(up_post_winter$region)
+period.names <- unique(up_post_winter$period)
+overlap.up <- NA
+for(j in 1:4){
+  temp1 <- up_post_winter%>%filter(region==region.names[j])
+  for(i in 1:4){
+    temp <- temp1%>%filter(Index==index.names[i])%>%select(beta, period,region)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period=='1967 - 1988')%>%select(beta),temp%>%filter(period=="1989 - 2013")%>%select(beta)), period1=c(1), period2=c(2), Index=index.names[i], region=region.names[j])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period=='1967 - 1988')%>%select(beta),temp%>%filter(period=="2014 - 2022")%>%select(beta)), period1=c(1), period2=c(3), Index=index.names[i], region=region.names[j])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period=="2014 - 2022")%>%select(beta),temp%>%filter(period=="1989 - 2013")%>%select(beta)), period1=c(3), period2=c(2), Index=index.names[i], region=region.names[j])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.up <-rbind(temp2,overlap.up)
+  }
+  
+}
+
+overlap.up 
+mean(na.omit(overlap.up%>%filter(period1==1&period2==3)%>%select(ov))$ov)
+sd(na.omit(overlap.up%>%filter(period1==1&period2==3)%>%select(ov))$ov)
+
+mean(na.omit(overlap.up%>%filter(period1==3&period2==2)%>%select(ov))$ov)
+sd(na.omit(overlap.up%>%filter(period1==3&period2==2)%>%select(ov))$ov)
+
+up.spring.int<-ggplot(up_post_winter%>%filter(region!="GoA"), aes(x = alpha, fill = as.factor(period2), group=as.factor(period2))) +
+  theme_bw() +
+  facet_grid(Index~region, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), name="Period") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Intercept",
+       y = "Posterior density")+
+  ggtitle("Winter")
+
+up.spring.slope<-ggplot(up_post_winter%>%filter(region!="GoA"), aes(x = beta, fill = as.factor(period2), group=as.factor(period2))) +
+  theme_bw() +
+  facet_grid(Index~region, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1], col[2], col[3]), name="Period") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")+
+  ggtitle("Winter")
+
+pdf(file = "Output/Figures/up.slope.pdf",   # The directory you want to save the file in
+    width = 8, # The width of the plot in inches
+    height = 8)
+up.spring.slope
+dev.off()
+
+pdf(file = "Output/Figures/up.int.pdf",   # The directory you want to save the file in
+    width =8, # The width of the plot in inches
+    height = 8)
+up.spring.int
+dev.off()
+
+
+dat.lm<- data%>%select(Year_lag, period,region, season, era.region,stand_bakun_seasonally,seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
+  rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
+  distinct()%>%
+  pivot_longer(!c(Year_lag, period, region, era.region,season, stand_bakun_seasonally), names_to = "Index_Name", values_to = "Index_Value")
+region.lev3 <-c("GoA", "Northern CC", "Central CC", "Southern CC")
+dat.lm$region <-factor(dat.lm$region, levels=region.lev3)
+
+up.lm<-ggplot(data = dat.lm%>%filter(region!="GoA"), aes(y = stand_bakun_seasonally, x =Index_Value,col=period)) +
+  facet_grid(Index_Name~region, scales='free') +
+  geom_point(aes(col=period)) +
+  #  geom_text(aes(label=Year_lag,col=period)) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  scale_y_continuous(name = "Upwelling (Bakun 1º 6-hourly)") +
+  scale_color_manual(values =  col[1:3], labels=c('1967 - 1988', '1989 - 2012', '2013 - 2023'))+
+  theme_bw()+
+  xlab("Climate Index Value")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle("Winter")
+
+pdf(file = "Output/Figures/up.lm.pdf",   # The directory you want to save the file in
+    width = 8, # The width of the plot in inches
+    height = 8.5)
+up.lm
+dev.off()
+
+
+#### Violin plot data file #####
+
+ratio.beta<-rbind(CALCOFI%>%filter(period=='3')%>%add_column((CALCOFI%>%filter(period=='3')%>%group_by(Index))$beta-(CALCOFI%>%filter(period=='2')%>%group_by(Index))$beta)%>%select(alpha,beta,survey,Index,`... - ...`),
+northern%>%filter(period=='3')%>%add_column((northern%>%filter(period=='3')%>%group_by(Index))$beta-(northern%>%filter(period=='2')%>%group_by(Index))$beta)%>%select(alpha,beta,survey,Index,`... - ...`),
+southern%>%filter(period=='3')%>%add_column((southern%>%filter(period=='3')%>%group_by(Index))$beta-(southern%>%filter(period=='2')%>%group_by(Index))$beta)%>%select(alpha,beta,survey,Index,`... - ...`),
+RREAS%>%filter(period=='3')%>%add_column((RREAS%>%filter(period=='3')%>%group_by(Index))$beta-(RREAS%>%filter(period=='2')%>%group_by(Index))$beta)%>%select(alpha,beta,survey,Index,`... - ...`))
+
+colnames(ratio.beta)<- c("alpha", "beta", "survey","Index", "ratio")
+
+ratio.alpha<-rbind(CALCOFI%>%filter(period=='3')%>%add_column((CALCOFI%>%filter(period=='3')%>%group_by(Index))$alpha-(CALCOFI%>%filter(period=='2')%>%group_by(Index))$alpha)%>%select(alpha,beta,survey,Index,`... - ...`),
+                  northern%>%filter(period=='3')%>%add_column((northern%>%filter(period=='3')%>%group_by(Index))$alpha-(northern%>%filter(period=='2')%>%group_by(Index))$alpha)%>%select(alpha,beta,survey,Index,`... - ...`),
+                  southern%>%filter(period=='3')%>%add_column((southern%>%filter(period=='3')%>%group_by(Index))$alpha-(southern%>%filter(period=='2')%>%group_by(Index))$alpha)%>%select(alpha,beta,survey,Index,`... - ...`),
+                  RREAS%>%filter(period=='3')%>%add_column((RREAS%>%filter(period=='3')%>%group_by(Index))$alpha-(RREAS%>%filter(period=='2')%>%group_by(Index))$alpha)%>%select(alpha,beta,survey,Index,`... - ...`))
+
+colnames(ratio.alpha)<- c("alpha", "beta", "survey", "Index","ratio")
+
+
+ratio.beta%>%group_by(survey,parameter,Index)%>%summarise(mean=mean(ratio))
+
+# plotting functions
+q.50 <- function(x) { return(quantile(x, probs=c(0.25,0.75))) }
+q.90 <- function(x) { return(quantile(x, probs=c(0.05,0.95))) }
+ratio.alpha<-ratio.alpha%>%
+  mutate(parameter="Intercept")
+
+ratio.beta<-ratio.beta%>%
+  mutate(parameter="Slope")
+
+ratio<-ratio.beta%>%add_row(ratio.alpha)%>%
+  mutate(survey2 = ifelse(survey=="CALCOFI (SCC)", "CalCOFI",
+                          ifelse(survey=="RREAS (CCC)", "RREAS",
+                                 ifelse(survey=="Southern Copepod (NCC)","s. Copepod","n. Copepod"))))%>%
+  mutate(survey2 = factor(survey2, levels=c(c("CalCOFI","RREAS", "s. Copepod","n. Copepod"))))
+  
+col4 <-pnw_palette(name="Starfish",n=4,type="discrete")
+cb <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+violin <-ggplot(ratio, aes(x=survey2, y=ratio, fill=survey2)) +
+  theme_bw() +
+  scale_fill_manual(values=col4, name="Survey")+
+  geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
+  # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
+  stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
+  stat_summary(fun="q.50", colour="black", geom="line", lwd=0.6)+
+  coord_flip() +
+  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  ggh4x::facet_grid2(Index~parameter,scales = "free_x") +
+  ylab("Difference Era 3 - Era 2") +
+  xlab("") +
+  geom_hline(aes(yintercept=0), size=0.3) 
+pdf(file = "Output/Figures/violin.pdf",   # The directory you want to save the file in
+    width = 6, # The width of the plot in inches
+    height = 6)
+violin
 dev.off()

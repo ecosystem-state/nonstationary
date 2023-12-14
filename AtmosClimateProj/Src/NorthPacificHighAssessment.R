@@ -24,6 +24,25 @@ plot(schroeder.nph$dec.yr, schroeder.nph$Area, type="l") #check plot to visualiz
 plot(schroeder.nph$dec.yr, schroeder.nph$Max, type="l") #check plot to visualize intensity through time
 
 
+ggplot(data=schroeder.nph%>%filter(era==3), 
+       aes(x,y, col=Max))+
+  facet_wrap(.~Month, ncol = 3) +
+  geom_point()+
+  scale_colour_gradientn(colours = colorspace::diverge_hcl(7), limits=c(1010, 1030))+
+  #geom_text()+
+  stat_ellipse(level = 0.9) +
+  ggtitle("2013 - 2023")+
+  theme_bw()
+
+ggplot(data=schroeder.nph%>%filter(era==2), 
+       aes(x,y, col=Max))+
+  facet_wrap(.~Month, ncol = 3) +
+  geom_point()+
+  scale_colour_gradientn(colours = colorspace::diverge_hcl(7), limits=c(1010, 1030))+
+  #geom_text()+
+  ggtitle("1989 - 2012")+
+  stat_ellipse(level = 0.9) +
+  theme_bw()
 #visulaizing location with ellipses
 ggplot(data=schroeder.nph%>%filter(Month==4|Month==5|Month==6), 
        aes(x,y, label = Year,col=as.factor(era)))+
@@ -62,10 +81,20 @@ winter.schroeder <- schroeder.nph%>%
 #calculating mean and SD values for location
 means <- spring.schroeder%>%
   group_by(era.lab)%>%
-  summarise(x=mean(mean.x),y=mean(mean.y),sd.x=sd(mean.x), sd.y=sd(mean.y), Year=0)%>%
-  rename(mean.x=x, mean.y=y)
+  summarise(x=mean(mean.x),y=mean(mean.y),sd.x=sd(mean.x), sd.y=sd(mean.y),
+            area=mean(mean.max),intensity=mean(mean.area),sd.area=sd(mean.max), sd.intensity=sd(mean.area),
+            Year=0)%>%
+  rename(mean.x=x, mean.y=y,mean.area=intensity, mean.max=area )
 theme_set(theme_classic())
 
+means <- winter.schroeder%>%
+  group_by(era.lab)%>%
+  summarise(x=mean(mean.x),y=mean(mean.y),sd.x=sd(mean.x), sd.y=sd(mean.y),
+            area=mean(mean.max),intensity=mean(mean.area),sd.area=sd(mean.max), sd.intensity=sd(mean.area),
+            Year=0)%>%
+  rename(mean.x=x, mean.y=y,mean.area=intensity, mean.max=area )
+theme_set(theme_classic())
+spring.schroeder<-winter.schroeder
 #plotting location
 col<-pnw_palette("Sunset2",3,type="discrete")
 a.plot <-ggplot(data=spring.schroeder,aes(mean.x,mean.y, label=Year,group=era.lab,col=era.lab))+
@@ -82,6 +111,23 @@ a.plot <-ggplot(data=spring.schroeder,aes(mean.x,mean.y, label=Year,group=era.la
   xlab('x (ºW)')
 a.plot
 
+h.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,group=era.lab,col=era.lab))+
+  geom_point()+
+  ggtitle("") +
+  #  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(era.lab))) +
+  theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
+        axis.title.y = element_text(size=7)) +
+  #geom_errorbar(data=means,aes(ymin = mean.area-sd.area, ymax= mean.area+sd.area), width=0.5) +
+ # geom_errorbar(data=means,aes(xmin = mean.max-sd.intensity, xmax=  mean.max+sd.intensity), width=0.5) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  ylab('North Pacific High \n Intensity (hPa)')+
+  theme_bw() +
+  geom_text_repel(data=subset(spring.schroeder, era==3),
+            aes(x=mean.max,y=mean.area,label=Year),col='black', max.overlaps = Inf, position = position_jitter(seed = 5))+
+  geom_vline(xintercept=mean(spring.schroeder$mean.max),lty=2, col='grey')+
+  geom_hline(yintercept=mean(spring.schroeder$mean.area), lty=2, col='grey')+
+  xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
+h.plot
 
 g.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,group=era.lab,col=era.lab))+
   #ggtitle("Center of North Pacific High") +
@@ -248,6 +294,11 @@ dev.off()
 pdf("Output/Fig 1v2.pdf", 6,11) 
 ggarrange( g.plot, c.plot,d.plot,labels = c("A", "B", "C"),  
           font.label = list(size = 12, face="plain"), nrow=3)
+dev.off()
+
+pdf("Output/Fig 1v3.pdf", 5,7) 
+ggarrange( a.plot, h.plot,c.plot,labels = c("A", "B", "C"),  
+           font.label = list(size = 12, face="plain"), nrow=3)
 dev.off()
 #TS for winter data
 max.ts <- ts(data=winter.schroeder%>%select(mean.max), 1967, 2023, frequency=1)

@@ -481,8 +481,10 @@ saveRDS(cor_diff, file = here('data/physical/correlation_analysis_diff.rds'))
 
 
 
-#### plotting SLP means ####
+#### plotting SLP Winter means ####
 # get lat/long
+nc <- nc_open(here("som/copernicus_jul10.nc"))
+
 x <- ncvar_get(nc, "longitude")
 y <- ncvar_get(nc, "latitude")
 lat <- rep(y, length(x))   # Vector of latitudes
@@ -525,188 +527,143 @@ winter_years <- unique(dates$winter_year)
 winter_years <- sort(winter_years[-which(is.na(winter_years))])
 X_winter <- matrix(NA, length(winter_years), ncol(X))
 for(i in 1:length(winter_years)) {
-  X_winter[i,] = colMeans(X[which(dates$winter_year == winter_years[i]),])
+  X_winter[i,]= colMeans(X[which(dates$winter_year == winter_years[i]),])/100
 }
 
 
 #X_winter<- X_winter/100
 slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
 mean_slp <- apply(X_winter,2,mean)
-sd_slp <- apply(X_winter,2,sd)
+#sd_slp <- apply(X_winter,2,sd)
 for(i in 1:ncol(X)) {
   slp_anomaly[,i] = (X_winter[,i]-mean_slp[i])
 }
-
-slp_anomaly<- scale(X_winter)
-
 dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
 dim(slp_anomaly)
-
-PDO.regr1 <- PDO.regr2<- PDO.regr3<- NA
-ONI.regr1 <- ONI.regr2<- ONI.regr3<- NA
-NPH.regr1 <- NPH.regr2<- NPH.regr3<- NA
-NPGO.regr1 <- NPGO.regr2<- NPGO.regr3<- NA
-
-# now loop through each cell
-
-
-dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
-dim(slp_anomaly)
-
-SLP1 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
-SLP2 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
-SLP3 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2023,]
-
-
-# now loop through each cell
-
-for(i in 1:ncol(SLP1)){
-  #  i <- 1
-  mod <- lm(SLP1[,i] ~ PDO1)
-  PDO.regr1[i] <- summary(mod)$coef[2,1]
-  
-  mod <- lm(SLP2[,i] ~ PDO2)
-  PDO.regr2[i] <- summary(mod)$coef[2,1]
-  
-  mod <- lm(SLP3[,i] ~ PDO3)
-  PDO.regr3[i] <- summary(mod)$coef[2,1]
-  
-  mod <- lm(SLP1[,i] ~ ONI1)
-  ONI.regr1[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP2[,i] ~ ONI2)
-  ONI.regr2[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP3[,i] ~ ONI3)
-  ONI.regr3[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP1[,i] ~ NPGO1)
-  NPGO.regr1[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP2[,i] ~ NPGO2)
-  NPGO.regr2[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP3[,i] ~ NPGO3)
-  NPGO.regr3[i] <- summary(mod)$coef[2,1]
-  
-  mod <- lm(SLP1[,i] ~ NPH1)
-  NPH.regr1[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP2[,i] ~ NPH2)
-  NPH.regr2[i] <- summary(mod)$coef[2,1] 
-  
-  mod <- lm(SLP3[,i] ~ NPH3)
-  NPH.regr3[i] <- summary(mod)$coef[2,1]
-}
-# calculate era differences for each cell
-
-PDO.diff3 <- PDO.regr3 - PDO.regr2
-PDO.diff2 <- PDO.regr3 - PDO.regr1
-PDO.diff1 <- PDO.regr2 - PDO.regr1
-
-NPGO.diff3 <- NPGO.regr3 - NPGO.regr2
-NPGO.diff2 <- NPGO.regr3 - NPGO.regr1
-NPGO.diff1 <- NPGO.regr2 - NPGO.regr1
-
-NPH.diff3 <- NPH.regr3 - NPH.regr2
-NPH.diff2 <- NPH.regr3 - NPH.regr1
-NPH.diff1 <- NPH.regr2 - NPH.regr1
-
-ONI.diff3 <- ONI.regr3 - ONI.regr2
-ONI.diff2 <- ONI.regr3 - ONI.regr1
-ONI.diff1 <- ONI.regr2 - ONI.regr1
-
-
-
-X_PDO_SLP<- as.data.frame(PDO.regr1)%>%
-  cbind(as.data.frame(PDO.regr2))%>%
-  cbind(as.data.frame(PDO.regr3))%>%
-  cbind(as.data.frame(ONI.regr1))%>%
-  cbind(as.data.frame(ONI.regr2))%>%
-  cbind(as.data.frame(ONI.regr3))%>%
-  cbind(as.data.frame(NPGO.regr1))%>%
-  cbind(as.data.frame(NPGO.regr2))%>%
-  cbind(as.data.frame(NPGO.regr3))%>%
-  cbind(as.data.frame(NPH.regr1))%>%
-  cbind(as.data.frame(NPH.regr2))%>%
-  cbind(as.data.frame(NPH.regr3))%>%
-  
-  
-  rename('A. PDO 1967 - 1988'= PDO.regr1,'B. PDO 1989 - 2012' = PDO.regr2, 'C. PDO 2013 - 2021' = PDO.regr3,
-         'D. ONI 1967 - 1988'= ONI.regr1,'E. ONI 1989 - 2012' = ONI.regr2, 'F. ONI 2013 - 2021' = ONI.regr3,
-         'G. NPGO 1967 - 1988'= NPGO.regr1,'H. NPGO 1989 - 2012' = NPGO.regr2, 'I. NPGO 2013 - 2021' = NPGO.regr3,
-         'J. NPH 1967 - 1988'= NPH.regr1,'K. NPH 1989 - 2012' = NPH.regr2, 'L. NPH 2013 - 2021' = NPH.regr3)
-
-X_Diff_SLP<- as.data.frame(PDO.diff1)%>%
-  cbind(as.data.frame(PDO.diff2))%>%
-  cbind(as.data.frame(PDO.diff3))%>%
-  cbind(as.data.frame(ONI.diff1))%>%
-  cbind(as.data.frame(ONI.diff2))%>%
-  cbind(as.data.frame(ONI.diff3))%>%
-  cbind(as.data.frame(NPGO.diff1))%>%
-  cbind(as.data.frame(NPGO.diff2))%>%
-  cbind(as.data.frame(NPGO.diff3))%>%
-  cbind(as.data.frame(NPH.diff1))%>%
-  cbind(as.data.frame(NPH.diff2))%>%
-  cbind(as.data.frame(NPH.diff3))%>%
-  
-  rename('A. PDO 1989:2012 - 1967:1988'= PDO.diff1,'B. PDO 2012:2023 - 1967:1988'= PDO.diff2,'C. PDO 2012:2023 - 1989:2012'= PDO.diff3,
-         'D. ONI 1989:2012 - 1967:1988'= ONI.diff1,'E. ONI 2012:2023 - 1967:1988'= ONI.diff2,'F. ONI 2012:2023 - 1989:2012'= ONI.diff3,
-         'G. NPGO 1989:2012 - 1967:1988'= NPGO.diff1,'H. NPGO 2012:2023 - 1967:1988'= NPGO.diff2,'I. 2012:2023 - NPGO 1989:2012'= NPGO.diff3,
-         'J. NPH 1989:2012 - 1967:1988'= NPH.diff1,'K. NPH 2012:2023 - 1967:1988'= NPH.diff2,'L. NPH 2012:2023 - 1989:2012'= NPH.diff3)
-
-X_PDO_SLP$latitude <- winter_lat 
-X_PDO_SLP$longitude <- winter_lon+360
-
-X_PDO_SLP<- X_PDO_SLP%>%  
-  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
-
-X_Diff_SLP$latitude <- winter_lat 
-X_Diff_SLP$longitude <- winter_lon+360
-
-X_Diff_SLP<- X_Diff_SLP%>%  
-  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
-
-world <- st_as_sf(map('world2', plot=F, fill=T)) #base layer for land masses
-#plot code
-ggplot() + 
-  geom_raster(data=X_PDO_SLP, aes(x=longitude,y=latitude,fill = coefficient)) + 
-  facet_wrap(~analysis, ncol = 3) + 
-  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
-  coord_sf(xlim=c(110,240), ylim=c(0,60)) +
-  scale_fill_gradient2(low = "blue", high = "red") + 
-  ggtitle("SLP")+
-  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
-  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 
 
 ####plotting slp dat
-SLP4 <- NA
-SLP5 <- NA
-SLP6 <- NA
-for(i in 1:ncol(SLP1)){
-  #  i <- 1
-  SLP4[i] <- mean(SLP1[,i])
-  SLP5[i] <- mean(SLP2[,i])
-  SLP6[i] <- mean(SLP3[,i])
-}
+SLP6 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
+SLP7 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
+SLP8 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2023,]
 
-SLP.dat<- as.data.frame(SLP4)%>%
-  cbind(as.data.frame(SLP5))%>%
-  cbind(as.data.frame(SLP6))
+for(i in 1:ncol(SLP6)){
+  #  i <- 1
+  SLP6[i] <- mean(SLP6[,i])
+  SLP7[i] <- mean(SLP7[,i])
+  SLP8[i] <- mean(SLP8[,i])
+}
+dim(colMeans(SLP6))
+SLP.dat<- as.data.frame(colMeans(SLP6))%>%
+  cbind(as.data.frame(colMeans(SLP7)))%>%
+  cbind(as.data.frame(colMeans(SLP8)))%>%
+  rename(Era1='colMeans(SLP6)', Era2='colMeans(SLP7)',Era3='colMeans(SLP8)')
 
 SLP.dat$latitude <- winter_lat 
 SLP.dat$longitude <- winter_lon+360
 SLP.dat<- SLP.dat%>%  
-  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "coefficient")
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "Anomaly")
 
 
-ggplot() + 
-  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = coefficient)) + 
+SLP.anom<- ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = Anomaly)) + 
   facet_wrap(~analysis, ncol = 1) + 
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
-  coord_sf(xlim=c(110,240), ylim=c(0,60)) +
-  scale_fill_gradient2(low = "blue", high = "red") + 
+  # coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  scale_fill_gradientn(colours = c("red","white","blue")) + 
   ggtitle("SLP")+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = Anomaly), col="lightgrey", bins=6,lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.anom
+pdf("Output/SLPanom.pdf", 4,8) 
+SLP.anom
+dev.off()
+
+
+#X_winter<- X_winter/100
+slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
+mean_slp <- apply(X_winter,2,mean)
+#sd_slp <- apply(X_winter,2,sd)
+for(i in 1:ncol(X)) {
+  slp_anomaly[,i] = (X_winter[,i])
+}
+dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
+dim(slp_anomaly)
+
+
+####plotting slp dat
+SLP6 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
+SLP7 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
+SLP8 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2023,]
+
+for(i in 1:ncol(SLP6)){
+  #  i <- 1
+  SLP6[i] <- mean(SLP6[,i])
+  SLP7[i] <- mean(SLP7[,i])
+  SLP8[i] <- mean(SLP8[,i])
+}
+dim(colMeans(SLP6))
+SLP.dat<- as.data.frame(colMeans(SLP6))%>%
+  cbind(as.data.frame(colMeans(SLP7)))%>%
+  cbind(as.data.frame(colMeans(SLP8)))%>%
+  rename(Era1='colMeans(SLP6)', Era2='colMeans(SLP7)',Era3='colMeans(SLP8)')
+
+
+SLP.dat$latitude <- winter_lat 
+SLP.dat$longitude <- winter_lon+360
+SLP.dat<- SLP.dat%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "SLP")
+
+
+
+SLP.plot<-ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = SLP)) + 
+  facet_wrap(~analysis, ncol = 1) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  scale_fill_gradientn(colours = c("blue","white","red")) + 
+  ggtitle("SLP")+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP),col="lightgrey", lwd=0.5)+
+  #geom_text_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP), stroke = 0.15)+
   #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.plot
+
+
+pdf("Output/SLPMeans.pdf", 4,8) 
+SLP.plot
+dev.off()
+
+
+
+SLP.dat<- as.data.frame(apply(SLP6, 2, sd))%>%
+  cbind(as.data.frame(apply(SLP7, 2, sd)))%>%
+  cbind(as.data.frame(apply(SLP8, 2, sd)))%>%
+  rename(Era1='apply(SLP6, 2, sd)', Era2='apply(SLP7, 2, sd)',Era3='apply(SLP8, 2, sd)')
+
+
+SLP.dat$latitude <- winter_lat 
+SLP.dat$longitude <- winter_lon+360
+SLP.dat<- SLP.dat%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "SD")
+
+
+
+SLP.plot<-ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = SD)) + 
+  facet_wrap(~analysis, ncol = 1) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  scale_fill_gradientn(colours = c("#704D9E", "#CF63A6", "#F7A086", "#F3E79A")) + 
+  ggtitle("SLP")+
+  #geom_contour(colour='white')+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SD), bins=5,col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.plot
+pdf("Output/SLPSDs.pdf", 4,8) 
+SLP.plot
+dev.off()
+

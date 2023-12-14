@@ -2,10 +2,14 @@ library(dplyr)
 library(reshape2)
 library(bayesdfa)
 library(MCMCvis)
+library(ggplot2)
+library(stringr)
+library(ggpubr)
 #Organize SCC biology data
 dat<- read.csv("data/biologydata_south.central_2023.csv")
 ax<- 20
 ti<-24
+wid <- 28
 plot_trends2 <- function(rotated_modelfit,
                          years = NULL,
                          highlight_outliers = FALSE,
@@ -20,8 +24,10 @@ plot_trends2 <- function(rotated_modelfit,
     facet_wrap("trend_number") +
     xlab("Time") +
     ylab("")+
+    
     theme(axis.text=element_text(size=ax),
-          axis.title=element_text(size=ti,face="bold"))
+          axis.title=element_text(size=ti,face="bold"))+
+    theme_bw()
   
   if (highlight_outliers) {
     swans <- find_swans(rotated, threshold = threshold)
@@ -68,7 +74,11 @@ plot_loadings2 <- function(rotated_modelfit,
       geom_hline(yintercept = 0, lty = 2) +
       coord_flip() +
       xlab("Time Series") +
-      ylab("Loading")
+      ylab("Loading")+
+      guides(fill="none", alpha='none')+
+      scale_x_discrete(labels = function(x) str_wrap(x, width = wid))+
+      theme(legend.position="none")+
+      theme_bw()
   }
   
   if (violin) {
@@ -82,7 +92,10 @@ plot_loadings2 <- function(rotated_modelfit,
       xlab("Time Series") +
       ylab("Loading")+
       theme(axis.text=element_text(size=ax),
-            axis.title=element_text(size=ti,face="bold"))
+            axis.title=element_text(size=ti,face="bold"))+
+      guides(fill="none", alpha='none')+
+      scale_x_discrete(labels = function(x) str_wrap(x, width = wid))+
+      theme_bw()
   }
   
   if (facet) {
@@ -93,6 +106,9 @@ plot_loadings2 <- function(rotated_modelfit,
 }
 
 
+
+l.calcofi <- plot_loadings2(r.calcofi,names=namescalcofi$namesshort)
+l.calcofi
 n1 <- names(dat)[grepl('calcofi.',names(dat))]
 n2 <- names(dat)[grepl('rreas.',names(dat))]
 ids <- c(n1,n2,"ZALOPHUS.PUPCT","ZALOPHUS.PUPWT")
@@ -198,10 +214,10 @@ fit.mod.RREAS = fit_dfa(y = Y,
 
 namesRREAs<-data.frame(names)%>%
   mutate(namesshort= c("Adult anchovy", "Adult sardine", "Krill", "Market squid",
-                       "Myctophids", "Juv. anchovy", "Juv. boccacio rockfish",
-                       "Juv. chilipepper rockfish", "Juv. Pacific hake", 
-                       "Juv. halfbanded rockfish", "Juv Pacific sanddab",
-                       "Juv. shortbelly rockfish","Juv. speckled sanddab", "Juv. widow rockfish"))
+                       "Myctophids", "Juv. anchovy", "Juv. boccacio rock.",
+                       "Juv. chilipepper rock.", "Juv. Pacific hake", 
+                       "Juv. halfbanded rock.", "Juv Pacific sand.",
+                       "Juv. shortbelly rock.","Juv. speckled sand.", "Juv. widow rock."))
 pars = rstan::extract(fit.mod.RREAS$model)
 r.RREAS <- rotate_trends(fit.mod.RREAS)
 p.RREAS <- plot_trends2(r.RREAS,years =dat.RREAS$year)
@@ -248,17 +264,15 @@ fit.mod.SEA = fit_dfa(y = Y,
                         estimate_process_sigma = model_df$estimate_process_sigma[1],
                         seed=123)
 namessea<-data.frame(names)%>%
-  mutate(namesshort= c("Snubnose smelt", "Slender blacksmelt", "Dogtooth lampfish", 
-                       "Northern anchovy", "Cal. smoothtongue", "Eared blacksmelt", 
-                       "North Pacific hake", "Cal. flashlightfish", "Sardinops",
-                       "Northern lampfish", "Bigfin laternfish", "Blue laternfish",
-                       "Mexican lampfish", "Lightfishes"))
+  mutate(namesshort= c("Ashy-storm petrel", "Brandt's cormorant", "Cassin's auklet",
+                       "Common murre", "Pelagic Cormorant", "Pigeon guillemot",
+                       "Rhinoceros auklet","Western Gull"))
 
 pars = rstan::extract(fit.mod.SEA$model)
 r.SEA <- rotate_trends(fit.mod.SEA)
 p.SEA <- plot_trends2(r.SEA, years =dat.SEA$year)
 p.SEA
-l.SEA <- plot_loadings2(r.SEA,names=names)
+l.SEA <- plot_loadings2(r.SEA,names=namessea$namesshort)
 l.SEA
 is_converged(fit.mod.SEA, threshold = 1.05, parameters = c("sigma", "x", "Z"))
 summary(fit.mod.SEA)
@@ -280,9 +294,14 @@ trend.calcofi <-dfa_trends(r.calcofi, years =dat.calcofi$year)%>%
   mutate(era=ifelse(time<=1988, 1, ifelse(time>1988&time<=2012, 2,3)))
 
 dfa.trends <- trend.calcofi%>%
-  add_row(trend.rreas)%>%
-  add_row(trend.sea)
+  add_row(trend.rreas)
 saveRDS(dfa.trends, file = "dfa.trends.rds")
 
-arranged <- ggarrange(p.SEA,l.SEA, p.RREAS,l.RREAS, p.calcofi, l.calcofi,ncol = 2, nrow = 3)
+arranged <- ggarrange(p.calcofi, l.calcofi,p.RREAS,l.RREAS,ncol = 2, nrow = 2,labels = c("A", "B", "C", "D"),
+                      heights=c(1,1.25,1.5))
 
+pdf(file = "DFAtrendsloadings.pdf",   # The directory you want to save the file in
+    width = 8, # The width of the plot in inches
+    height = 7)
+arranged
+dev.off()
