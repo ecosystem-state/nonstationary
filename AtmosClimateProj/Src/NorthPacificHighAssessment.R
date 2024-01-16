@@ -1,3 +1,4 @@
+library(ggrepel)
 
 library(strucchange)
 library(ncdf4)
@@ -23,6 +24,22 @@ schroeder.nph <-read.csv('data/physical/year_mon_area_max_x_y_new.csv')%>%
 plot(schroeder.nph$dec.yr, schroeder.nph$Area, type="l") #check plot to visualize area through time
 plot(schroeder.nph$dec.yr, schroeder.nph$Max, type="l") #check plot to visualize intensity through time
 
+
+ggplot(data=schroeder.nph, 
+       aes(Month,Max, group=Year))+
+  facet_wrap(.~era, ncol = 3) +
+  #geom_line()+
+  geom_smooth(se=F, col='grey')+
+  geom_smooth(aes(group=era))+
+  theme_bw()
+
+ggplot(data=schroeder.nph, 
+       aes(Month,Area, group=Year))+
+  facet_wrap(.~era, ncol = 3) +
+  #geom_line()+
+  geom_smooth(se=F, col='grey')+
+  geom_smooth(aes(group=era))+
+  theme_bw()
 
 ggplot(data=schroeder.nph%>%filter(era==3), 
        aes(x,y, col=Max))+
@@ -87,14 +104,14 @@ means <- spring.schroeder%>%
   rename(mean.x=x, mean.y=y,mean.area=intensity, mean.max=area )
 theme_set(theme_classic())
 
-means <- winter.schroeder%>%
+means2 <- winter.schroeder%>%
   group_by(era.lab)%>%
   summarise(x=mean(mean.x),y=mean(mean.y),sd.x=sd(mean.x), sd.y=sd(mean.y),
             area=mean(mean.max),intensity=mean(mean.area),sd.area=sd(mean.max), sd.intensity=sd(mean.area),
             Year=0)%>%
   rename(mean.x=x, mean.y=y,mean.area=intensity, mean.max=area )
 theme_set(theme_classic())
-spring.schroeder<-winter.schroeder
+#spring.schroeder<-winter.schroeder
 #plotting location
 col<-pnw_palette("Sunset2",3,type="discrete")
 a.plot <-ggplot(data=spring.schroeder,aes(mean.x,mean.y, label=Year,group=era.lab,col=era.lab))+
@@ -111,7 +128,7 @@ a.plot <-ggplot(data=spring.schroeder,aes(mean.x,mean.y, label=Year,group=era.la
   xlab('x (ºW)')
 a.plot
 
-h.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,group=era.lab,col=era.lab))+
+h.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
   geom_point()+
   ggtitle("") +
   #  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(era.lab))) +
@@ -123,13 +140,13 @@ h.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,gro
   ylab('North Pacific High \n Intensity (hPa)')+
   theme_bw() +
   geom_text_repel(data=subset(spring.schroeder, era==3),
-            aes(x=mean.max,y=mean.area,label=Year),col='black', max.overlaps = Inf, position = position_jitter(seed = 5))+
-  geom_vline(xintercept=mean(spring.schroeder$mean.max),lty=2, col='grey')+
-  geom_hline(yintercept=mean(spring.schroeder$mean.area), lty=2, col='grey')+
+            aes(y=mean.max,x=mean.area,label=Year),col='black', max.overlaps = Inf, position = position_jitter(seed = 5))+
+  geom_hline(yintercept=mean(spring.schroeder$mean.max),lty=2, col='grey')+
+  geom_vline(xintercept=mean(spring.schroeder$mean.area), lty=2, col='grey')+
   xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
 h.plot
 
-g.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,group=era.lab,col=era.lab))+
+g.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, group=era.lab,col=era.lab))+
   #ggtitle("Center of North Pacific High") +
   geom_point(col='grey',data=subset(spring.schroeder, era!=3))+
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(era.lab))) +
@@ -138,11 +155,11 @@ g.plot <-ggplot(data=spring.schroeder,aes(x=mean.max,y=mean.area, label=Year,gro
  # geom_errorbar(data=means,aes(ymin = mean.y-sd.y, ymax=  mean.y+sd.y), width=0.5) +
  # geom_errorbar(data=means,aes(xmin = mean.x-sd.x, xmax=  mean.x+sd.x), width=0.5) +
   scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
-  ylab('North Pacific High \n Intensity (hPa)')+
+  xlab('North Pacific High \n Intensity (hPa)')+
   theme_bw() +
   geom_text(data=subset(spring.schroeder, era==3),
             aes(x=mean.max,y=mean.area,label=Year),col='black')+
-  xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
+  ylab(expression("North Pacific High Area "~(10^6 ~km^2)))
 g.plot
 #check TS to look at variables through time for spring
 plot(spring.schroeder$Year, spring.schroeder$xy, type="l")

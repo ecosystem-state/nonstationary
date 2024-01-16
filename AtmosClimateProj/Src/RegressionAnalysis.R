@@ -481,7 +481,7 @@ saveRDS(cor_diff, file = here('data/physical/correlation_analysis_diff.rds'))
 
 
 
-#### plotting SLP Winter means ####
+#### plotting SLP Spring means ####
 # get lat/long
 nc <- nc_open(here("som/copernicus_jul10.nc"))
 
@@ -571,9 +571,10 @@ SLP.anom<- ggplot() +
   geom_sf(data=world, col="black", fill="darkgoldenrod3") +
   # coord_sf(xlim=c(140,240), ylim=c(0,60)) +
   coord_sf(xlim=c(190,240), ylim=c(30,60)) +
-  scale_fill_gradientn(colours = c("red","white","blue")) + 
-  ggtitle("SLP")+
-  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = Anomaly), col="lightgrey", bins=6,lwd=0.5)+
+  scale_fill_gradientn(colours = c("blue","white","red")) + 
+  ggtitle("SLP Anomalies (Spring)")+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = Anomaly), col="lightgrey", lwd=0.5)+
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 SLP.anom
 pdf("Output/SLPanom.pdf", 4,8) 
@@ -624,7 +625,9 @@ SLP.plot<-ggplot() +
   coord_sf(xlim=c(190,240), ylim=c(30,60)) +
   #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
   scale_fill_gradientn(colours = c("blue","white","red")) + 
-  ggtitle("SLP")+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+
+  ggtitle("SLP (Spring)")+  
   geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP),col="lightgrey", lwd=0.5)+
   #geom_text_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP), stroke = 0.15)+
   #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
@@ -658,12 +661,203 @@ SLP.plot<-ggplot() +
   coord_sf(xlim=c(190,240), ylim=c(30,60)) +
   #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
   scale_fill_gradientn(colours = c("#704D9E", "#CF63A6", "#F7A086", "#F3E79A")) + 
-  ggtitle("SLP")+
+  ggtitle("SLP SD (Spring)")+
   #geom_contour(colour='white')+
-  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SD), bins=5,col="lightgrey", lwd=0.5)+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SD), col="lightgrey", lwd=0.5)+
   theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
 SLP.plot
 pdf("Output/SLPSDs.pdf", 4,8) 
+SLP.plot
+dev.off()
+
+
+#### plotting SLP Winter means ####
+# get lat/long
+nc <- nc_open(here("som/copernicus_jul10.nc"))
+
+x <- ncvar_get(nc, "longitude")
+y <- ncvar_get(nc, "latitude")
+lat <- rep(y, length(x))   # Vector of latitudes
+lon <- rep(x, each = length(y)) 
+
+# get times
+raw <- ncvar_get(nc, "time")
+tunits<-ncatt_get(nc,"time",attname="units")
+tustr<-strsplit(tunits$value, " ")
+dates <- RNetCDF::utcal.nc("hours since 1900-01-01 00:00:00.0", raw)
+dates <- as.data.frame(dates[,c("year","month")])
+dates$index <- seq(1, nrow(dates))
+dates$winter_year <- dates$year
+dates$winter_year[which(dates$month %in% 4:10)] <- NA
+#dates$winter_year[which(dates$month %in% 1:3)] <- NA
+var_name = "msl"
+
+tmp_array <- ncvar_get(nc,var_name)
+dlname <- ncatt_get(nc,var_name,"long_name")
+dunits <- ncatt_get(nc,var_name,"units")
+fillvalue <- ncatt_get(nc,var_name,"_FillValue")
+# replace netCDF fill values with NA's
+tmp_array[tmp_array==fillvalue$value] <- NA
+X <- tmp_array
+
+# The 1st dimension of X is lon, 2nd dimension is lat, 3rd dimension is date. But the array needs to be flattened (time on rows, spatial cells on columns) for easier use.
+X <- aperm(X, 3:1) # transpose array # X
+X <- matrix(X, nrow=dim(X)[1], ncol=prod(dim(X)[2:3])) # months in rows, cells in columns! 
+to_drop <- which(is.na(apply(X,2,sum)))
+if(length(to_drop) > 0) {
+  X <- X[,-to_drop]# drop cells with NAs 
+  winter_lat <- lat[-to_drop]
+  winter_lon <- lon[-to_drop]
+} else {
+  winter_lat <- lat
+  winter_lon <- lon
+}
+# Add block for winter average calculations
+winter_years <- unique(dates$winter_year)
+winter_years <- sort(winter_years[-which(is.na(winter_years))])
+X_winter <- matrix(NA, length(winter_years), ncol(X))
+for(i in 1:length(winter_years)) {
+  X_winter[i,]= colMeans(X[which(dates$winter_year == winter_years[i]),])/100
+}
+
+
+#X_winter<- X_winter/100
+slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
+mean_slp <- apply(X_winter,2,mean)
+#sd_slp <- apply(X_winter,2,sd)
+for(i in 1:ncol(X)) {
+  slp_anomaly[,i] = (X_winter[,i]-mean_slp[i])
+}
+dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
+dim(slp_anomaly)
+
+
+####plotting slp dat
+SLP6 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
+SLP7 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
+SLP8 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2023,]
+
+for(i in 1:ncol(SLP6)){
+  #  i <- 1
+  SLP6[i] <- mean(SLP6[,i])
+  SLP7[i] <- mean(SLP7[,i])
+  SLP8[i] <- mean(SLP8[,i])
+}
+dim(colMeans(SLP6))
+SLP.dat<- as.data.frame(colMeans(SLP6))%>%
+  cbind(as.data.frame(colMeans(SLP7)))%>%
+  cbind(as.data.frame(colMeans(SLP8)))%>%
+  rename(Era1='colMeans(SLP6)', Era2='colMeans(SLP7)',Era3='colMeans(SLP8)')
+
+SLP.dat$latitude <- winter_lat 
+SLP.dat$longitude <- winter_lon+360
+SLP.dat<- SLP.dat%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "Anomaly")
+
+
+SLP.anom<- ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = Anomaly)) + 
+  facet_wrap(~analysis, ncol = 1) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  # coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  scale_fill_gradientn(colours = c("blue","white","red")) + 
+  ggtitle("SLP Anomalies (Winter)")+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = Anomaly), col="lightgrey",lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.anom
+pdf("Output/SLPanomWinter.pdf", 4,8) 
+SLP.anom
+dev.off()
+
+
+#X_winter<- X_winter/100
+slp_anomaly <- matrix(NA, length(winter_years), ncol(X))
+mean_slp <- apply(X_winter,2,mean)
+#sd_slp <- apply(X_winter,2,sd)
+for(i in 1:ncol(X)) {
+  slp_anomaly[,i] = (X_winter[,i])
+}
+dimnames(slp_anomaly) <- list(as.character(winter_years),paste("N", winter_lat, "E", winter_lon, sep=""))
+dim(slp_anomaly)
+
+
+####plotting slp dat
+SLP6 <- slp_anomaly[rownames(slp_anomaly) %in% 1967:1988,] 
+SLP7 <- slp_anomaly[rownames(slp_anomaly) %in% 1989:2012,]
+SLP8 <- slp_anomaly[rownames(slp_anomaly) %in% 2013:2023,]
+
+for(i in 1:ncol(SLP6)){
+  #  i <- 1
+  SLP6[i] <- mean(SLP6[,i])
+  SLP7[i] <- mean(SLP7[,i])
+  SLP8[i] <- mean(SLP8[,i])
+}
+dim(colMeans(SLP6))
+SLP.dat<- as.data.frame(colMeans(SLP6))%>%
+  cbind(as.data.frame(colMeans(SLP7)))%>%
+  cbind(as.data.frame(colMeans(SLP8)))%>%
+  rename(Era1='colMeans(SLP6)', Era2='colMeans(SLP7)',Era3='colMeans(SLP8)')
+
+
+SLP.dat$latitude <- winter_lat 
+SLP.dat$longitude <- winter_lon+360
+SLP.dat<- SLP.dat%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "SLP")
+
+
+
+SLP.plot<-ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = SLP)) + 
+  facet_wrap(~analysis, ncol = 1) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  scale_fill_gradientn(colours = c("blue","white","red")) + 
+  ggtitle("SLP (Winter)")+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP),col="lightgrey", lwd=0.5)+
+  #geom_text_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SLP), stroke = 0.15)+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.plot
+
+
+pdf("Output/SLPMeansWinter.pdf", 4,8) 
+SLP.plot
+dev.off()
+
+
+
+SLP.dat<- as.data.frame(apply(SLP6, 2, sd))%>%
+  cbind(as.data.frame(apply(SLP7, 2, sd)))%>%
+  cbind(as.data.frame(apply(SLP8, 2, sd)))%>%
+  rename(Era1='apply(SLP6, 2, sd)', Era2='apply(SLP7, 2, sd)',Era3='apply(SLP8, 2, sd)')
+
+
+SLP.dat$latitude <- winter_lat 
+SLP.dat$longitude <- winter_lon+360
+SLP.dat<- SLP.dat%>%  
+  pivot_longer(!latitude&!longitude,names_to = "analysis", values_to = "SD")
+
+
+
+SLP.plot<-ggplot() + 
+  geom_raster(data=SLP.dat, aes(x=longitude,y=latitude,fill = SD)) + 
+  facet_wrap(~analysis, ncol = 1) + 
+  geom_sf(data=world, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(190,240), ylim=c(30,60)) +
+  #coord_sf(xlim=c(140,240), ylim=c(0,60)) +
+  scale_fill_gradientn(colours = c("#704D9E", "#CF63A6", "#F7A086", "#F3E79A")) + 
+  ggtitle("SLP SD (Winter)")+
+  #geom_contour(colour='white')+
+  scale_x_continuous(breaks = c(190, 210, 230))+
+  geom_contour(data=SLP.dat, aes(x=longitude,y=latitude,z = SD), col="lightgrey", lwd=0.5)+
+  theme(panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA)) 
+SLP.plot
+pdf("Output/SLPSDsWinter.pdf", 4,8) 
 SLP.plot
 dev.off()
 
