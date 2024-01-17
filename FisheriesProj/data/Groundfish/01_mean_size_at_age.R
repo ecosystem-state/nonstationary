@@ -29,3 +29,21 @@ summaries <- dplyr::group_by(sub, common_name, year, age) %>%
 
 saveRDS(summaries, "wcbts_mean_size_at_age.rds")
 
+
+# Calculate condition factor
+# aggregate by species and year
+min_sample <- 20
+min_years <- 10
+sub <- dplyr::filter(fish, sex=="F", !is.na(weight), !is.na(length_cm))
+
+summaries <- dplyr::group_by(sub, common_name, year) %>%
+  dplyr::summarise(n = n(),
+                   scientific_name = scientific_name[1],
+                   cond_fac = mean(exp(log(weight) - 3*log(length_cm))*100,na.rm=T)) %>%
+  dplyr::filter(n >= min_sample) %>%
+  dplyr::group_by(common_name) %>%
+  dplyr::mutate(nyr = length(unique(year))) %>%
+  dplyr::filter(nyr > min_years) %>%
+  dplyr::select(-nyr)
+
+saveRDS(summaries, "wcbts_condition_factor.rds")
