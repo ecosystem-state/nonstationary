@@ -12,7 +12,7 @@ dat<- readRDS("data/all_juvenile_indices.rds")
 dat<- read.csv("data/salmon/MatRate_Survival_up to CY 2021_new.csv")
 
 Indicator_ID<-data.frame(stock_code=unique(dat$stock_code))
-Indicator_ID%>%mutate(stock_name=ifelse(stock_code=='ATN', "Atnarko", 
+ID1<-Indicator_ID%>%mutate(stock_name=ifelse(stock_code=='ATN', "Atnarko", 
                                  ifelse(stock_code=='BQR', "Big Qualicum River Fall",
                                  ifelse(stock_code=='CHI', "Chilliwack River Fall",
                                  ifelse(stock_code=='COW', "Cowichan River Fall",
@@ -57,7 +57,7 @@ Indicator_ID%>%mutate(stock_name=ifelse(stock_code=='ATN', "Atnarko",
                                  ifelse(stock_code=='WSH', "Willamette Spring",1))))))))))))))))))))))))))))))))))))))))))))
 
 
-Indicator_ID%>%mutate(area=ifelse(stock_code=='NSA'|stock_code=='SSA'|stock_code=='CHK'|stock_code=='UNU', "Southeast Alaska", 
+ID2<-Indicator_ID%>%mutate(area=ifelse(stock_code=='NSA'|stock_code=='SSA'|stock_code=='CHK'|stock_code=='UNU', "Southeast Alaska", 
                                  ifelse(stock_code=='TST', "Transboundary Rivers",
                                  ifelse(stock_code=='ATN'|stock_code=='KLM'|stock_code=='KLY', "North/Central BC",
                                  ifelse(stock_code=='RBT', "WCVI",
@@ -74,3 +74,114 @@ Indicator_ID%>%mutate(area=ifelse(stock_code=='NSA'|stock_code=='SSA'|stock_code
                                  ifelse(stock_code=='LYF'|stock_code=='LYY', "Snake River",
                                  ifelse(stock_code=='SRH', "North Oregon Coast",
                                  ifelse(stock_code=='ELK', "Mid Oregon Coast",1))))))))))))))))))
+
+ID3<-ID2%>%mutate(ecoregion=ifelse(area=="North/Central BC", 2, 
+                                 ifelse(area=="Strait of Georgia", 2,
+                                 ifelse(area=="Fraser River", 2,
+                                 ifelse(area=="Lower Columbia River", 2,
+                                 ifelse(area=="Mid Oregon Coast", 3,
+                                 ifelse(area=="Juan de Fuca", 2,
+                                 ifelse(area=="Hood Canal", 1,
+                                 ifelse(area=="South Puget Sound", 1,
+                                 ifelse(area=="Upper Columbia River", 2,
+                                 ifelse(area=="North Washington Coast", 2,
+                                 ifelse(area=="Snake River", 2,
+                                 ifelse(area=="Southeast Alaska", 0,
+                                 ifelse(area=="North Puget Sound",1,
+                                 ifelse(area=="WCVI", 0,
+                                 ifelse(area=="Central Puget Sound", 1,
+                                 ifelse(area=="North Oregon Coast", 3,0)))))))))))))))))
+
+Marine_Survival<-dat%>%filter(age==2)%>%mutate(calendar_year=brood_year+2)%>%
+  left_join(ID1)%>%left_join(ID2)%>%left_join(ID3)%>%mutate(location='45N')
+  
+
+
+##### Environmental Data ####
+Bifurcation<-read.csv('data/Environment/BifurcationIndex.csv')%>%
+mutate(stand_BI=scale(BI))
+
+Beuti<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_45N.csv')%>%add_column(location='45N')%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_38N.csv')%>%add_column(location='38N'))%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_33N.csv')%>%add_column(location='33N'))
+
+Beuti<-Beuti%>%
+  add_column('Year'=as.numeric(format(as.Date(Beuti$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(Beuti$time),"%m")))
+  
+Beuti_seasonal<-Beuti%>%
+ filter(Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(Beuti%>%
+              filter(Month==4|Month==5|Month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(Beuti%>%
+              filter(Month==7|Month==8)%>%
+              mutate(season="Summer"))%>%
+  group_by(Year, season, location)%>%
+  summarise(seasonal_beuti = mean(beuti))%>%
+  ungroup()%>%
+  group_by(season, location)%>%
+  mutate(seasonal_beuti=scale(seasonal_beuti))
+
+
+Beuti_seasonal%>%summarise(mean=mean(seasonal_beuti), sd=sd(seasonal_beuti))
+
+CUTI<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_45N.csv')%>%add_column(location='45N')%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_38N.csv')%>%add_column(location='39N'))%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_33N.csv')%>%add_column(location='33N'))
+
+CUTI<-CUTI%>%
+  add_column('Year'=as.numeric(format(as.Date(CUTI$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(CUTI$time),"%m")))
+
+CUTI_seasonal<-CUTI%>%
+ filter(Month==1|Month==2|Month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(CUTI%>%
+              filter(Month==4|Month==5|Month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(CUTI%>%
+              filter(Month==7|Month==8)%>%
+              mutate(season="Summer"))%>%
+  group_by(Year, season, location)%>%
+  summarise(seasonal_cuti = mean(cuti))%>%
+  ungroup()%>%
+  group_by(season, location)%>%
+  mutate(seasonal_cuti=scale(seasonal_cuti))
+
+
+SST.dat <-readRDS('data/environment/SST/SST_MUR_poly.rds')
+
+SST_seasonal<-SST.dat%>%
+ filter(month==1|month==2|month==3)%>%
+  mutate(season="Winter")%>%
+  bind_rows(SST.dat%>%
+              filter(month==4|month==5|month==6)%>%
+              mutate(season="Spring"))%>%
+  bind_rows(SST.dat%>%
+              filter(month==7|month==8)%>%
+              mutate(season="Summer"))%>%
+  group_by(year, season, ecoregion)%>%
+  summarise(seasonal_sst = mean(sst))%>%
+  ungroup()%>%
+  group_by(season, ecoregion)%>%
+  mutate(seasonal_sst=scale(seasonal_sst))%>%
+  rename(Year=year)
+
+#### Combing Environmental with Chinook####
+
+
+##### Exploratory Plots #####
+ggplot(data =Marine_Survival,
+              aes(x =calendar_year, y = Marine.Survival, group = stock_name, col=stock_name))+
+  #group=region)) +
+  facet_wrap(.~area, ncol = 3, labeller = label_wrap_gen(25), scales="free_y") +
+  geom_line(aes(group = stock_name,col=stock_name))+
+  scale_y_continuous(name ="Age-2 Survival" )+
+  scale_x_continuous(name = "Calendar Year")
+
+
+CO2_mod1 <- gam(log(uptake) ~ s(log(conc), k=5, bs="tp") +
+s(Plant_uo, k=12, bs="re"),
+data=CO2, method="REML", family="gaussian")
