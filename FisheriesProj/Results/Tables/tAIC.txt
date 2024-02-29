@@ -1,0 +1,4 @@
+Model,AIC,delAIC
+Single Shared Smooth Term,-4612.02324516639,326.915975999379
+Unshared Smooth Term,-4608.15990457449,330.779316591273
+Single Shared Smooth Term and Group-Level Smooth Term,-4938.93922116577,0

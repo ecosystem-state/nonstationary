@@ -1,0 +1,40 @@
+Stock.Country,stock_code,stock_name,area,ecoregion,RunType,Hatchery,Age,Wild,Code,Code2
+US,SKY,Skykomish Fall Fingerling,Central Puget Sound,1,Fall,Wallace,Age 0,Hatchery,1,15
+US,STL,Stillaguamish Fall Fingerling² ,Central Puget Sound,1,Summer,Stillaguamish Tribal,Age 0,Hatchery,2,16
+CA,CHI,Chilliwack River Fall,Fraser River,2,Fall,Chilliwack,Age 0,Hatchery,3,17
+CA,HAR,Harrison River,Fraser River,2,Fall,Chehalis,Age 0,Hatchery,4,18
+CA,MSH,Middle Shuswap,Fraser River,2,Summer,Shuswap Falls,Age 0,Hatchery,5,19
+CA,SHU,Lower Shuswap River Summer,Fraser River,2,Summer,Shuswap Falls,Age 0,Hatchery,1,15
+US,GAD,George Adams Fall Fingerling,Hood Canal,1,Summer/Fall,George Adams,Age 0,Hatchery,2,16
+US,ELW,Elwha River,Juan de Fuca,2,Summer/Fall,Lower Elwha,Age 0,Hatchery,3,17
+US,CWF,Cowlitz Fall Tule,Lower Columbia River,2,Fall,Cowlitz,Age 0,Hatchery,4,18
+US,LRH,Columbia Lower River Hatchery,Lower Columbia River,2,Fall,Big Creek,Age 0,Hatchery,5,19
+US,LRW,Lewis River Wild,Lower Columbia River,2,Fall,Wild,Age 0,Wild,1,15
+US,SPR,Spring Creek Tule,Lower Columbia River,2,Spring,Spring Creek National Hatchery,Age 0,Hatchery,2,16
+US,ELK,Elk River,Mid Oregon Coast,3,Fall,Elk River,Age 0,Hatchery,3,17
+US,SRH,Salmon River,North Oregon Coast,3,Fall,Salmon,Age 0,Hatchery,4,18
+US,NSF,Nooksack Spring Fingerling,North Puget Sound,1,Spring,Kendall Creek,Age 0,Hatchery,5,19
+US,SAM,Samish Fall Fingerling,North Puget Sound,1,Fall,Samish,Age 0,Hatchery,1,15
+US,SKF,Skagit Spring Fingerling,North Puget Sound,1,Spring,Marblemount,Age 0,Hatchery,2,16
+US,SSF,Skagit Summer Fingerling,North Puget Sound,1,Summer,Marblemount,Age 0,Hatchery,3,17
+US,HOK,Hoko Fall Fingerling,North Washington Coast,2,Fall,Hoko Makah National Hatchery,Age 0,Hatchery,4,18
+US,QUE,Queets Fall Fingerling,North Washington Coast,2,Fall,"Wild, Salmon River (WA)",Age 0,Wild,5,19
+US,SOO,Tsoo-Yess Fall Fingerling,North Washington Coast,2,Fall,Makah National Fish Hatchery,Age 0,Hatchery,1,15
+CA,ATN,Atnarko,North/Central BC,2,Summer/Fall,Snootli,Age 0,Hatchery,2,16
+US,LYF,Lyons Ferry Fingerling,Snake River,2,Fall,Lyons Ferry,Age 0,Hatchery,3,17
+US,GRN,Green River Fingerling,South Puget Sound,1,Fall,Soos Creek,Age 0,Hatchery,4,18
+US,NIS,Nisqually Fall Fingerling,South Puget Sound,1,Fall,Clear Creek,Age 0,Hatchery,5,19
+US,SPS,South Puget Sound Fall Fingerling,South Puget Sound,1,Fall,Soos/Grovers/Issaquah creeks,Age 0,Hatchery,1,15
+CA,BQR,Big Qualicum River Fall,Strait of Georgia,2,Fall,Big Qualicum,Age 0,Hatchery,2,16
+CA,COW,Cowichan River Fall,Strait of Georgia,2,Fall,Cowichan,Age 0,Hatchery,3,17
+CA,PHI,Phillips River Fall,Strait of Georgia,2,Fall,Gillard Pass,Age 0,Hatchery,4,18
+CA,PPS,Puntledge River Summer,Strait of Georgia,2,Summer,Puntledge,Age 0,Hatchery,5,19
+CA,QUI,Quinsam River Fall ,Strait of Georgia,2,Fall,Quinsam,Age 0,Hatchery,1,15
+US,HAN,Hanford Wild Brights,Upper Columbia River,2,Fall,Wild,Age 0,Wild,2,16
+US,SUM,Columbia River Summers,Upper Columbia River,2,Summer,Wells,Age 0,Hatchery,3,17
+US,URB,Columbia Upriver Bright,Upper Columbia River,2,Fall,Preist Rapids,Age 0,Hatchery,4,18
+CA,RBT,Robertson Creek Fall,WCVI,0,Fall,Robertson Creek,Age 0,Hatchery,5,19
+US,IGHF,Irongate Fall Fingerling,Klamath River,4,Fall,Irongate Hatchery,Age 0,Hatchery,1,15
+US,IGHY,Irongate Fall Yearling,Klamath River,4,Fall,Irongate Hatchery,Age 0,Hatchery,2,16
+US,TRHF,Trinity River Spring Fingerling,Klamath River,4,Spring,Trinity River Hatchery,Age 0,Hatchery,3,17
+US,TRHY,Trinity River Spring Yearling,Klamath River,4,Spring,Trinity River Hatchery,Age 0,Hatchery,4,18

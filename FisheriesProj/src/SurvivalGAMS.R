@@ -23,96 +23,198 @@ library(gratia)
 library(latex2exp)
 library(patchwork)
 
-Survival_combined<- read.csv("data/Survival_combined.csv")
-
+Survival_combined<- read.csv("data/Survival_combined.csv")%>%
+  dplyr::select(-Mat.Rate,-season)%>%
+  dplyr::filter(stock_code!='IGHY'&stock_code!='TRHY')
+unique(Survival_combined$stock_name)
 ##### Fitting Temporal GAMS #####
 dd <- Survival_combined[complete.cases(Survival_combined), ]
-dd <-cbind(dd,area1=as.factor(dd$area))
-
-#smoothed term by year with random effect smoothed term
-t1<-gam(Marine.Survival ~ s(calendar_year, k=6, m=2)+
-              s(calendar_year, area1, k=6, bs="fs", m=2),
+dd <-cbind(dd,area1=as.factor(dd$area), season1=as.factor(dd$RunType))
+##Single smoothed term by year
+t1<-gam(Marine.Survival ~ s(calendar_year, k=6),
 data=dd, method="REML")
 #plot.gam(g1)
-draw(t1)
+#draw(t1)
 
 #smoothed term by year for each region (unshared)
 t2<-gam(Marine.Survival ~s(calendar_year, by=area1,k=6),
 data=dd, method="REML")
 #plot.gam(g1)
-draw(t2)
+#draw(t2)
+
+#smoothed term by year with random effect smoothed term
+t3<-gam(Marine.Survival ~ s(calendar_year, k=6, m=2)+
+              s(calendar_year, area1, k=6, bs="fs", m=2),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(t3)
+
+tAIC<-c(AIC(t1),AIC(t2),AIC(t3))
+mintAIC=min(tAIC)
+taic <- data.frame(cbind(Model=c("Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term"),
+  AIC=c(AIC(t1),AIC(t2),AIC(t3)),
+  delAIC=c(AIC(t1)-mintAIC,AIC(t2)-mintAIC,AIC(t3)-mintAIC)))
+taic
+write.table(taic, file = "Results/Tables/tAIC.txt", sep = ",", quote = FALSE, row.names = F)
+##### Fitting Beuti GAMS #####
+dd <- Survival_combined[complete.cases(Survival_combined), ]
+dd <-cbind(dd,area1=as.factor(dd$area))
+##Single smoothed term by year
+b1<-gam(Marine.Survival ~ s(Beuti_spring, k=4),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(b1)
+
+#smoothed term by year for each region (unshared)
+b2<-gam(Marine.Survival ~s(Beuti_spring, by=area1,k=4),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(b2)
+
+#smoothed term by year with random effect smoothed term
+b3<-gam(Marine.Survival ~ s(Beuti_spring, k=4, m=2)+
+              s(Beuti_spring, area1, k=4, bs="fs", m=2),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(b3)
+
+bAIC<-c(AIC(b1),AIC(b2),AIC(b3))
+minbAIC=min(bAIC)
+baic <- data.frame(cbind(Model=c("Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term"),
+  AIC=c(AIC(b1),AIC(b2),AIC(b3)),
+  delAIC=c(AIC(b1)-minbAIC,AIC(b2)-minbAIC,AIC(b3)-minbAIC)))
+baic
+
+###### Fitting SST GAMS #####
 
 ##Single smoothed term by year
-t3<-gam(Marine.Survival ~ s(calendar_year, k=6),
+s1<-gam(Marine.Survival ~ s(sst_spring, k=4),
 data=dd, method="REML")
 #plot.gam(g1)
-draw(t3)
+#draw(s1)
 
-#shared smooth term by year with intercept random effect by region but common smoothed term
-t4<-gam(Marine.Survival ~ s(calendar_year, k=5, bs="tp") +
-s(area1, k=12, bs="re"),
-data=dd, method="REML", family="gaussian")
-draw(t4)
+#smoothed term by year for each region (unshared)
+s2<-gam(Marine.Survival ~s(sst_spring, by=area1,k=4),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(s2)
 
-tAIC<-c(AIC(t1),AIC(t2),AIC(t3),AIC(t4))
+#smoothed term by year with random effect smoothed term
+s3<-gam(Marine.Survival ~ s(sst_spring, k=4, m=2)+
+              s(sst_spring, area1, k=4, bs="fs", m=2),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(s3)
+
+sAIC<-c(AIC(s1),AIC(s2),AIC(s3))
+minsAIC=min(sAIC)
+saic <- data.frame(cbind(Model=c("Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term"),
+  AIC=c(AIC(s1),AIC(s2),AIC(s3)),
+  delAIC=c(AIC(s1)-minsAIC,AIC(s2)-minsAIC,AIC(s3)-minsAIC)))
+saic
+
+##### Fitting STI GAMS #####
+
+##Single smoothed term by year
+st1<-gam(Marine.Survival ~ s(seasonal_STI, k=4),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(st1)
+
+#smoothed term by year for each region (unshared)
+st2<-gam(Marine.Survival ~s(seasonal_STI, by=area1,k=4),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(st2)
+
+#smoothed term by year with random effect smoothed term
+st3<-gam(Marine.Survival ~ s(seasonal_STI, k=4, m=2)+
+              s(seasonal_STI, area1, k=4, bs="fs", m=2),
+data=dd, method="REML")
+#plot.gam(g1)
+#draw(st3)
+
+stAIC<-c(AIC(st1),AIC(st2),AIC(st3))
+minstAIC=min(stAIC)
+staic <- data.frame(cbind(Model=c("Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term"),
+  AIC=c(AIC(st1),AIC(st2),AIC(st3)),
+  delAIC=c(AIC(st1)-minstAIC,AIC(st2)-minstAIC,AIC(st3)-minstAIC)))
+staic
+
 
 ##### Fitting Covariate GAMS #####
-g1<-gam(Marine.Survival ~ s(Beuti_spring, k=5, m=2)+
-              s(Beuti_spring, area1, k=5, bs="fs", m=2),
-data=dd, method="REML")
-#plot.gam(g1)
-draw(g1)
-
-g2<-gam(Marine.Survival ~ s(sst_spring, k=5, m=2)+
-              s(sst_spring, area1, k=5, bs="fs", m=2),
-data=dd, method="REML")
-summary(g3)
-draw(g2)
-
-g3<-gam(Marine.Survival ~ s(seasonal_STI, k=5, m=2)+
-              s(seasonal_STI, area1, k=5, bs="fs", m=2),
-data=dd, method="REML")
-summary(g3)
-draw(g3)
-
-g2.3<-gam(Marine.Survival ~ s(seasonal_STI, k=5, m=2)+
+g.st.s<-gam(Marine.Survival ~ s(seasonal_STI, k=5, m=2)+
               s(seasonal_STI, area1, k=5, bs="fs", m=2)+
             s(sst_spring, k=5, m=2)+
               s(sst_spring, area1, k=5, bs="fs", m=2),
 data=dd, method="REML")
-summary(g2.3)
+summary(g.st.s)
 
-g1.2<-gam(Marine.Survival ~ s(Beuti_spring, k=5, m=2)+
+gb.s<-gam(Marine.Survival ~ s(Beuti_spring, k=5, m=2)+
               s(Beuti_spring, area1, k=5, bs="fs", m=2)+
             s(sst_spring, k=5, m=2)+
               s(sst_spring, area1, k=5, bs="fs", m=2),
 data=dd, method="REML")
-summary(g1.2)
+summary(gb.s)
 
-g1.3<-gam(Marine.Survival ~ s(seasonal_STI, k=5, m=2)+
+gst.b<-gam(Marine.Survival ~ s(seasonal_STI, k=5, m=2)+
               s(seasonal_STI, area1, k=5, bs="fs", m=2)+
             s(Beuti_spring, k=5, m=2)+
               s(Beuti_spring, area1, k=5, bs="fs", m=2),
 data=dd, method="REML")
-summary(g1.3)
+summary(gst.b)
 
-g1.2.3<-gam(Marine.Survival ~s(Beuti_spring, k=5, m=2)+
+gst.b.s<-gam(Marine.Survival ~s(Beuti_spring, k=5, m=2)+
               s(Beuti_spring, area1, k=5, bs="fs", m=2)+
               s(seasonal_STI, k=5, m=2)+
               s(seasonal_STI, area1, k=5, bs="fs", m=2)+
             s(sst_spring, k=5, m=2)+
               s(sst_spring, area1, k=5, bs="fs", m=2),
 data=dd, method="REML")
-summary(g1.2.3)
-draw(g1.2)
+summary(gst.b.s)
+#draw(gst.b.s)
+
+#### testing return season ####
+
+g.ra<-gam(Marine.Survival ~ s(Beuti_spring, k=5, m=2)+
+              s(Beuti_spring, area1, k=5, bs="fs", m=2)+
+              s(Beuti_spring,season1, k=5, bs="fs", m=2)+
+            s(sst_spring, k=5, m=2)+
+              s(sst_spring,area1, k=5, bs="fs", m=2)+
+              s(sst_spring,season1, k=5, bs="fs", m=2),
+          
+data=dd, method="REML")
+draw(g.ra)
+summary(g.ra)
 
 #### Creating AIC Table & Predictions ####
-min=AIC(g1.2)
-aic <- data.frame(cbind(Model=c("Spring SST", "STI", "Spring BEUTI", "Spring SST; Spring BEUTI",
-                               "STI; Spring BEUTI", "Spring SST; STI",
-                     "Spring SST; Spring BEUTI; STI"),
-  AIC=c(AIC(g1),AIC(g2),AIC(g3), AIC(g1.2),AIC(g1.3), AIC(g2.3), AIC(g1.2.3)),
-  delAIC=c(AIC(g1)-min,AIC(g2)-min,AIC(g3)-min, AIC(g1.2)-min,AIC(g1.3)-min, AIC(g2.3)-min, AIC(g1.2.3)-min)))
+gAIC=c(AIC(b1),AIC(b2),AIC(b3),
+       AIC(s1),AIC(s2),AIC(s3),
+       AIC(st1),AIC(st2),AIC(st3),
+       AIC(g.st.s),AIC(gb.s), AIC(gst.b), AIC(gst.b.s), AIC(g.ra))
+min=min(gAIC)
+aic <- data.frame(cbind(Model=c("Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term",
+                     "Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term",
+                     "Single Shared Smooth Term", "Unshared Smooth Term",
+                     "Single Shared Smooth Term and Group-Level Smooth Term",
+                      "Single Shared Smooth Term and Group-Level Smooth Term",
+                      "Single Shared Smooth Term and Group-Level Smooth Term",
+                       "Single Shared Smooth Term and Group-Level Smooth Term",
+                        "Single Shared Smooth Term and Group-Level Smooth Term",
+                        "Single Shared Smooth Term and Group-Level (RMIS & Season) Smooth Term"),
+                     Covariates=c("BEUTI", "BEUTI","BEUTI",
+                                  "SST","SST","SST",
+                                  "STI","STI","STI",
+                                  "SST & STI", "BEUTI & SST", "STI & BEUTI", 
+                                  "STI & BEUTI & SST", "STI & SST"),
+  AIC=gAIC,
+  delAIC=gAIC-min))
 aic
 write.table(aic, file = "Results/Tables/AIC.txt", sep = ",", quote = FALSE, row.names = F)
 # setup prediction data
@@ -120,37 +222,44 @@ Beuti_pred <- with(dd,
                       expand.grid(Beuti_spring=seq(min(Beuti_spring), max(Beuti_spring), length=50),
                                   sst_spring=rep(0, length=50),
                                   #stand_BI=seq(min(stand_BI), max(stand_BI), length=50),
-                                  area1=levels(area1)))
+                                  area1=levels(area1),season1=levels(season1)))
 
 
 SST_pred <- with(dd,
                       expand.grid(sst_spring=seq(min(sst_spring), max(sst_spring), length=50),
                                   Beuti_spring=rep(0, length=50),
                                   #stand_BI=seq(min(stand_BI), max(stand_BI), length=50),
-                                  area1=levels(area1)))
+                                  area1=levels(area1),season1=levels(season1)))
 
 
 #### Generating the plots ####
-p1 <- draw(g1.2, select = "s(Beuti_spring)")+
-  xlab("Spring BEUTI")+
-  ggtitle("Fixed Effects") +
+p1 <- draw(g.ra, select = "s(Beuti_spring)")+
+  xlab("Beuti_spring")+
+  ggtitle("Global Smooth") +
   theme_bw()+
   theme(plot.title = element_text(hjust = 0.5))
 p1
-p2 <- draw(g1.2, select = "s(Beuti_spring,area1)")+
-  xlab("Spring BEUTI")+
-  ggtitle("Random Effects") +
+p2 <- draw(g.ra, select = "s(Beuti_spring,area1)")+
+  xlab("Beuti_spring")+
+  ggtitle("RMIS Group-Level") +
   theme_bw()+
   theme(plot.title = element_text(hjust = 0.5))+ 
   guides(color =guide_legend(title="RMIS Region"))
 p2
-p3 <- draw(g1.2, select = "s(sst_spring)")+
+p3 <- draw(g.ra, select = "s(Beuti_spring,season1)")+
+  xlab("Beuti_spring")+
+  ggtitle("Run Type Group-Level") +
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5))+ 
+  guides(color =guide_legend(title="Run Type"))
+p3
+p4 <- draw(g.ra, select = "s(sst_spring)")+
   xlab("Spring SST")+
   ggtitle("") +
   theme_bw()+
   theme(plot.title = element_text(hjust = 0.5))
-p3
-p4 <- draw(g1.2, select = "s(sst_spring,area1)")+
+p4
+p5 <- draw(g.ra, select = "s(sst_spring,area1)")+
   xlab("Spring SST")+
   ggtitle("") +
   theme_bw()+
@@ -160,44 +269,65 @@ p4 <- draw(g1.2, select = "s(sst_spring,area1)")+
     legend.key = element_rect(fill = "white")) + 
   guides(color = guide_legend(override.aes= list(alpha = 0, color = "white"))) +
   theme(legend.key=element_rect(colour="white"))
-p4
-p1 + p2 + p3 + p4+plot_layout(ncol = 2,nrow=2)
+p5
+p6 <- draw(g.ra, select = "s(sst_spring,season1)")+
+  xlab("Spring SST")+
+  ggtitle("") +
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    legend.text = element_text(color = "white"),
+    legend.title = element_text(color = "white"),
+    legend.key = element_rect(fill = "white")) + 
+  guides(color = guide_legend(override.aes= list(alpha = 0, color = "white"))) +
+  theme(legend.key=element_rect(colour="white"))
+p6
+p1 + p2 + p3 + p4+ p5 + p6+plot_layout(ncol = 3,nrow=2)
 
 # make the prediction, add this and a column of standard errors to the prediction
 # data.frame. Predictions are on the log scale.
-dd2<-cbind(dd$area1, dd$stock_code)
+dd2<-cbind(dd$area1,dd$season1, dd$stock_code)
 Beuti_pred<- cbind(Beuti_pred,
-                       predict(g1.2, 
-                               Beuti_pred, 
+                       predict(g.ra, 
+                              Beuti_pred, 
                                se.fit=TRUE, 
                                type="response"))
 SST_pred<- cbind(SST_pred,
-                       predict(g1.2, 
+                       predict(g.ra, 
                                SST_pred, 
                                se.fit=TRUE, 
                                type="response"))
+pred.b<-unique(dd%>%dplyr::select(area1, season1))%>%left_join(Beuti_pred)
+pred.s<-unique(dd%>%dplyr::select(area1, season1))%>%left_join(SST_pred)
+p<-unique(dd%>%dplyr::select(stock_code, Code2))
+
 #g1.2_pred <-merge(g1.2_pred,dd2)
 # make the plot. Note here the use of the exp() function to back-transform the
 # predictions (which are for log-uptake) to the original scale
 Beuti_pred_plot<-ggplot(data=dd, aes(y=Marine.Survival, x=Beuti_spring, group=area1)) +
   facet_wrap(~area1,scales="free_y") +
-   geom_ribbon(aes(ymin=fit - 2*se.fit, ymax=fit + 2*se.fit, x=Beuti_spring),
-              data=Beuti_pred, 
-              alpha=0.3, 
+   geom_ribbon(aes(ymin=fit - 2*se.fit, ymax=fit + 2*se.fit, 
+                   x=Beuti_spring,group=season1, fill=season1),
+              data=pred.b, 
+              alpha=0.2, 
               inherit.aes=FALSE) +
-  geom_point(aes(col=stock_code))+#
-  geom_line(aes(y=fit), data=Beuti_pred)
-
+  geom_point(aes(col=season1, group=season1,shape=stock_code))+#
+  scale_shape_manual(values=p$Code2)+
+  geom_line(aes(y=fit, group=season1, col=season1), data=pred.b)+
+  guides(shape = FALSE)
+Beuti_pred_plot
 
 SST_pred_plot<-ggplot(data=dd, aes(y=Marine.Survival, x=sst_spring, group=area1)) +
   facet_wrap(~area1,scales="free_y") +
-   geom_ribbon(aes(ymin=fit - 2*se.fit, ymax=fit + 2*se.fit, x=sst_spring),
-              data=SST_pred, 
-              alpha=0.3, 
+   geom_ribbon(aes(ymin=fit - 2*se.fit, ymax=fit + 2*se.fit, 
+                   x=sst_spring,group=season1, fill=season1),
+              data=pred.s, 
+              alpha=0.1, 
               inherit.aes=FALSE) +
-  geom_point(aes(col=stock_code))+#
-  geom_line(aes(y=fit), data=SST_pred)
-  
+    geom_point(aes(col=season1, group=season1,shape=stock_code))+#
+  scale_shape_manual(values=p$Code2)+
+  geom_line(aes(y=fit, group=season1, col=season1), data=pred.s)+
+  guides(shape = FALSE)
+  SST_pred_plot
 pdf(file = "Results/Figures/SST_pred_plot.pdf",   # The directory you want to save the file in
     width = 11, # The width of the plot in inches
     height = 7)
@@ -209,3 +339,12 @@ pdf(file = "Results/Figures/Beuti_pred_plot.pdf",   # The directory you want to 
     height = 7)
 Beuti_pred_plot
 dev.off()
+
+pdf(file = "Results/Figures/BestModel_plot.pdf",   # The directory you want to save the file in
+    width = 11, # The width of the plot in inches
+    height = 8.5)
+p1 + p3 + p2 + p4 + p6+ p5+plot_layout(ncol = 3,nrow=2)
+
+dev.off()
+
+

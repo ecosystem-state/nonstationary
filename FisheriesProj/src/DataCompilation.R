@@ -23,96 +23,27 @@ library(gratia)
 library(latex2exp)
 library(patchwork)
 
-dat<- readRDS("data/all_juvenile_indices.rds")
-dat<- read.csv("data/salmon/MatRate_Survival_up to CY 2021_new.csv")
+#dat<- readRDS("data/all_juvenile_indices.rds")
+dat<- read.csv("data/salmon/MatRate_Survival_up to CY 2021_new.csv")%>%
+  dplyr::select(stock_code, brood_year, age, Mat.Rate, Marine.Survival)
+cwt<- read.csv("data/CWTinfo.csv")
+Klamath<- read.csv("data/salmon/SurvAge2.csv")%>%
+  rename(Marine.Survival=s.rate, brood_year=brood.yr, stock_code=component)%>%
+  mutate(Mat.Rate=0)%>%
+  dplyr::select(stock_code, brood_year, age, Mat.Rate, Marine.Survival)
 
 Indicator_ID<-data.frame(stock_code=unique(dat$stock_code))
-ID1<-Indicator_ID%>%mutate(stock_name=ifelse(stock_code=='ATN', "Atnarko", 
-                                 ifelse(stock_code=='BQR', "Big Qualicum River Fall",
-                                 ifelse(stock_code=='CHI', "Chilliwack River Fall",
-                                 ifelse(stock_code=='COW', "Cowichan River Fall",
-                                 ifelse(stock_code=='CWF', "Cowlitz Fall Tule",
-                                 ifelse(stock_code=='ELK', "Elk River",
-                                 ifelse(stock_code=='ELW', "Elwha River",
-                                 ifelse(stock_code=='GAD', "George Adams Fall Fingerling",
-                                 ifelse(stock_code=='GRN', "Green River Fingerling",
-                                 ifelse(stock_code=='HAN', "Hanford Wild Brights",
-                                 ifelse(stock_code=='HAR', "Harrison River",
-                                 ifelse(stock_code=='HOK', "Hoko Fall Fingerling",
-                                 ifelse(stock_code=='KLM', "Kitsumkalum River Summer",
-                                 ifelse(stock_code=='KLY', "Kitsumkalum Yearling",
-                                 ifelse(stock_code=='LRH', "Columbia Lower River Hatchery",
-                                 ifelse(stock_code=='LRW', "Lewis River Wild",
-                                 ifelse(stock_code=='LYF', "Lyons Ferry Fingerling",
-                                 ifelse(stock_code=='LYY', "Lyons Ferry Yearling", 
-                                 ifelse(stock_code=='MSH', "Middle Shuswap",
-                                 ifelse(stock_code=='NIC', "Nicola",
-                                 ifelse(stock_code=='NIS', "Nisqually Fall Fingerling",
-                                 ifelse(stock_code=='NSA', "Northern Southeast Alaska",
-                                 ifelse(stock_code=='NSF', "Nooksack Spring Fingerling",
-                                 ifelse(stock_code=='PHI', "Phillips River Fall",
-                                 ifelse(stock_code=='PPS', "Puntledge River Summer",
-                                 ifelse(stock_code=='QUE', "Queets Fall Fingerling",
-                                 ifelse(stock_code=='QUI', "Quinsam River Fall ",
-                                 ifelse(stock_code=='RBT', "Robertson Creek Fall",
-                                 ifelse(stock_code=='SAM', "Samish Fall Fingerling",
-                                 ifelse(stock_code=='SHU', "Lower Shuswap River Summer",
-                                 ifelse(stock_code=='SKF', "Skagit Spring Fingerling",
-                                 ifelse(stock_code=='SKY', "Skykomish Fall Fingerling",
-                                 ifelse(stock_code=='SMK', "Similkameen Summer Yearling",
-                                 ifelse(stock_code=='SOO', "Tsoo-Yess Fall Fingerling",
-                                 ifelse(stock_code=='SPR', "Spring Creek Tule",
-                                 ifelse(stock_code=='SPS', "South Puget Sound Fall Fingerling",
-                                 ifelse(stock_code=='SRH', "Salmon River",
-                                 ifelse(stock_code=='SSA', "Southern SEAK Spring",
-                                 ifelse(stock_code=='SSF', "Skagit Summer Fingerling",
-                                 ifelse(stock_code=='STL', "Stillaguamish Fall Fingerling² ",
-                                 ifelse(stock_code=='SUM', "Columbia River Summers",
-                                 ifelse(stock_code=='URB', "Columbia Upriver Bright",
-                                 ifelse(stock_code=='WSH', "Willamette Spring",1))))))))))))))))))))))))))))))))))))))))))))
-
-
-ID2<-data.frame(Indicator_ID%>%mutate(area=ifelse(stock_code=='NSA'|stock_code=='SSA'|stock_code=='CHK'|stock_code=='UNU', "Southeast Alaska", 
-                                 ifelse(stock_code=='TST', "Transboundary Rivers",
-                                 ifelse(stock_code=='ATN'|stock_code=='KLM'|stock_code=='KLY', "North/Central BC",
-                                 ifelse(stock_code=='RBT', "WCVI",
-                                 ifelse(stock_code=='QUI'|stock_code=='PHI'|stock_code=='PPS'|stock_code=='BQR'|stock_code=='COW', "Strait of Georgia",
-                                 ifelse(stock_code=='HAR'|stock_code=='CHI'|stock_code=='CKO'|stock_code=='NIC'|stock_code=='SHU'|stock_code=='MSH', "Fraser River",
-                                 ifelse(stock_code=='NSF'|stock_code=='SAM'|stock_code=='SSF'|stock_code=='SKF', "North Puget Sound",
-                                 ifelse(stock_code=='STL'|stock_code=='SKY', "Central Puget Sound",
-                                 ifelse(stock_code=='NIS'|stock_code=='SPS'|stock_code=='GRN', "South Puget Sound",
-                                 ifelse(stock_code=='GAD', "Hood Canal",
-                                 ifelse(stock_code=='ELW', "Juan de Fuca",
-                                 ifelse(stock_code=='HOK'|stock_code=='QUE'|stock_code=='SOO', "North Washington Coast",
-                                 ifelse(stock_code=='LRH'|stock_code=='CWF'|stock_code=='LRW'|stock_code=='WSH'|stock_code=='SPR', "Lower Columbia River",
-                                 ifelse(stock_code=='HAN'|stock_code=='SMK'|stock_code=='SUM'|stock_code=='URB', "Upper Columbia River",
-                                 ifelse(stock_code=='LYF'|stock_code=='LYY', "Snake River",
-                                 ifelse(stock_code=='SRH', "North Oregon Coast",
-                                 ifelse(stock_code=='ELK', "Mid Oregon Coast",1)))))))))))))))))))
-
-ID3<-ID2%>%mutate(ecoregion=ifelse(area=="North/Central BC", 2, 
-                                 ifelse(area=="Strait of Georgia", 2,
-                                 ifelse(area=="Fraser River", 2,
-                                 ifelse(area=="Lower Columbia River", 2,
-                                 ifelse(area=="Mid Oregon Coast", 3,
-                                 ifelse(area=="Juan de Fuca", 2,
-                                 ifelse(area=="Hood Canal", 1,
-                                 ifelse(area=="South Puget Sound", 1,
-                                 ifelse(area=="Upper Columbia River", 2,
-                                 ifelse(area=="North Washington Coast", 2,
-                                 ifelse(area=="Snake River", 2,
-                                 ifelse(area=="Southeast Alaska", 0,
-                                 ifelse(area=="North Puget Sound",1,
-                                 ifelse(area=="WCVI", 0,
-                                 ifelse(area=="Central Puget Sound", 1,
-                                 ifelse(area=="North Oregon Coast", 3,0)))))))))))))))))
-
+dat<-dat%>%
+  add_row(Klamath)%>%
+  left_join(cwt)
 Marine_Survival<-dat%>%filter(age==2)%>%mutate(calendar_year=brood_year+1)%>%
-  left_join(ID1)%>%left_join(ID2)%>%left_join(ID3)%>%mutate(location=ifelse(ecoregion==1|ecoregion==2,"47N",
-                                                            ifelse(ecoregion==3,"45N",NA)))%>%
-  mutate(location2="45N")
+  left_join(ID1)%>%left_join(ID2)%>%left_join(ID3)%>%left_join(ID4)%>%mutate(location=ifelse(ecoregion==1|ecoregion==2,"47N",
+                                                            ifelse(ecoregion==3,"45N",
+                                                                  ifelse(ecoregion==4,"39N", NA))))%>%
+ mutate(location=ifelse(ecoregion==1|ecoregion==2,"45N",
+                                                            ifelse(ecoregion==3,"45N",
+                                                                  ifelse(ecoregion==4,"39N", NA))))
 
-  
 
 
 ##### Environmental Data ####
@@ -146,9 +77,9 @@ Beuti_eco_seasonal<-Beuti_eco%>%
 Beuti_eco_seasonal%>%group_by(season, location)%>%
   summarise(mean=mean(seasonal_Beuti_eco), sd=sd(seasonal_Beuti_eco))
 
-Beuti<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_45N.csv')%>%add_column(location2='45N')%>%
-  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_38N.csv')%>%add_column(location2='38N'))%>%
-  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_33N.csv')%>%add_column(location2='33N'))
+Beuti<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_45N.csv')%>%add_column(location='45N')%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_38N.csv')%>%add_column(location='39N'))%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_BEUTI_33N.csv')%>%add_column(location='33N'))
 
 Beuti<-Beuti%>%
   add_column('Year'=as.numeric(format(as.Date(Beuti$time),"%Y")))%>%
@@ -163,10 +94,10 @@ Beuti_seasonal<-Beuti%>%
   bind_rows(Beuti%>%
               filter(Month==7|Month==8)%>%
               mutate(season="Summer"))%>%
-  group_by(Year, season, location2)%>%
+  group_by(Year, season, location)%>%
   summarise(seasonal_beuti = mean(beuti))%>%
   ungroup()%>%
-  group_by(season, location2)%>%
+  group_by(season, location)%>%
   mutate(seasonal_beuti=scale(seasonal_beuti))%>%
   rename(calendar_year=Year)%>%
   ungroup()
@@ -174,9 +105,9 @@ Beuti_seasonal<-Beuti%>%
 
 Beuti_seasonal%>%summarise(mean=mean(seasonal_beuti), sd=sd(seasonal_beuti))
 
-CUTI<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_45N.csv')%>%add_column(location2='45N')%>%
-  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_38N.csv')%>%add_column(location2='39N'))%>%
-  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_33N.csv')%>%add_column(location2='33N'))
+CUTI<-read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_45N.csv')%>%add_column(location='45N')%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_38N.csv')%>%add_column(location='39N'))%>%
+  bind_rows(read.csv('data/Environment/CUTI_BEUTI/cciea_OC_CUTI_33N.csv')%>%add_column(location='33N'))
 
 CUTI<-CUTI%>%
   add_column('Year'=as.numeric(format(as.Date(CUTI$time),"%Y")))%>%
@@ -191,26 +122,25 @@ CUTI_seasonal<-CUTI%>%
   bind_rows(CUTI%>%
               filter(Month==7|Month==8)%>%
               mutate(season="Summer"))%>%
-  group_by(Year, season, location2)%>%
+  group_by(Year, season, location)%>%
   summarise(seasonal_cuti = mean(cuti))%>%
   ungroup()%>%
-  group_by(season, location2)%>%
+  group_by(season, location)%>%
   mutate(seasonal_cuti=scale(seasonal_cuti))%>%
   rename(calendar_year=Year)%>%
   ungroup()
 
-STI<-read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_39N.csv')%>%add_column(location2='39N')%>%
-  bind_rows(read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_42N.csv')%>%add_column(location2='42N'))%>%
-  bind_rows(read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_45N.csv')%>%add_column(location2='45N'))%>%
-  bind_rows(read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_48N.csv')%>%add_column(location2='48N'))
+STI<-read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_39N.csv')%>%add_column(location='39N')%>%
+  bind_rows(read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_42N.csv')%>%add_column(location='42N'))%>%
+  bind_rows(read.csv('data/Environment/Upwelling_Phenology/cciea_OC_STI_45N.csv')%>%add_column(location='45N'))
 
 STI<-STI%>%
   add_column('Year'=as.numeric(format(as.Date(STI$time),"%Y")))%>%
   add_column('Month'=as.numeric(format(as.Date(STI$time),"%m")))%>%
-  group_by(Year, location2)%>%
+  group_by(Year, location)%>%
   summarise(seasonal_STI = mean(sti))%>%
   ungroup()%>%
-  group_by(location2)%>%
+  group_by(location)%>%
   mutate(seasonal_STI=scale(seasonal_STI))%>%
   rename(calendar_year=Year)%>%
   ungroup()
@@ -251,19 +181,19 @@ Beuti_eco_spring<-Beuti_eco_seasonal%>%filter(season=='Spring')%>%rename(Beuti_e
 
 Survival_combined<-Marine_Survival%>%dplyr::left_join(SST_winter,by=c('ecoregion', 'calendar_year'))%>%
                                 dplyr::left_join(SST_spring, by=c('ecoregion', 'calendar_year'))%>%
-  dplyr::left_join(CUTI_winter, by=c('location2', 'calendar_year'))%>%
-  dplyr::left_join(CUTI_spring, by=c('location2', 'calendar_year'))%>%
- dplyr::left_join(STI, by=c('location2', 'calendar_year'))%>%
-  dplyr::left_join(Beuti_winter, by=c('location2', 'calendar_year'))%>%
-  dplyr::left_join(Beuti_spring, by=c('location2', 'calendar_year'))%>%
-  dplyr::left_join(Beuti_eco_winter, by=c('location', 'calendar_year'))%>%
-  dplyr::left_join(Beuti_eco_spring, by=c('location', 'calendar_year'))%>%
+  dplyr::left_join(CUTI_winter, by=c('location', 'calendar_year'))%>%
+  dplyr::left_join(CUTI_spring, by=c('location', 'calendar_year'))%>%
+ dplyr::left_join(STI, by=c('location', 'calendar_year'))%>%
+  dplyr::left_join(Beuti_winter, by=c('location', 'calendar_year'))%>%
+  dplyr::left_join(Beuti_spring, by=c('location', 'calendar_year'))%>%
+ # dplyr::left_join(Beuti_eco_winter, by=c('location', 'calendar_year'))%>%
+ # dplyr::left_join(Beuti_eco_spring, by=c('location', 'calendar_year'))%>%
   dplyr::left_join(Bifurcation, by=c('calendar_year'))
 write.csv(Survival_combined, file = "data/Survival_combined.csv")
 
 ##### Exploratory Plots #####
 data<-read.csv("data/Survival_combined.csv")
-
+unique(data$stock_code)
 TS.survival<-ggplot(data =Survival_combined,
               aes(x =calendar_year, y = Marine.Survival, group = stock_name, col=stock_name))+
   #group=region)) +
