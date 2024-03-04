@@ -477,7 +477,7 @@ saveRDS(cor_cc, file = here('data/physical/correlation_analysis.rds'))
 
 saveRDS(cor_diff, file = here('data/physical/correlation_analysis_diff.rds'))
 
-
+ddd <-readRDS('data/physical/correlation_analysis.rds')
 
 
 

@@ -23,13 +23,18 @@ library(gratia)
 library(latex2exp)
 library(patchwork)
 
-Survival_combined<- read.csv("data/Survival_combined.csv")%>%
-  dplyr::select(-Mat.Rate,-season)%>%
-  dplyr::filter(stock_code!='IGHY'&stock_code!='TRHY')
-unique(Survival_combined$stock_name)
+Survival_combined<- read.csv("data/Salmon/Survival_combined.csv")%>%
+  dplyr::select(-Mat.Rate,-season,-X)%>%
+  dplyr::filter(stock_code!='IGHY'&stock_code!='TRHY')%>%
+  mutate(area=as.factor(area), RunType=as.factor(RunType))%>%
+  filter(ecoregion==1|ecoregion==2|ecoregion==3|ecoregion==4)%>%
+  filter(calendar_year>=1988&calendar_year<=2023)
+table(is.na(Survival_combined))["FALSE"]
+
+saveRDS(Survival_combined, file = "data/Salmon/Survival_covariates.rds")
+
 ##### Fitting Temporal GAMS #####
-dd <- Survival_combined[complete.cases(Survival_combined), ]
-dd <-cbind(dd,area1=as.factor(dd$area), season1=as.factor(dd$RunType))
+
 ##Single smoothed term by year
 t1<-gam(Marine.Survival ~ s(calendar_year, k=6),
 data=dd, method="REML")
@@ -186,7 +191,6 @@ g.ra<-gam(Marine.Survival ~ s(Beuti_spring, k=5, m=2)+
             s(sst_spring, k=5, m=2)+
               s(sst_spring,area1, k=5, bs="fs", m=2)+
               s(sst_spring,season1, k=5, bs="fs", m=2),
-          
 data=dd, method="REML")
 draw(g.ra)
 summary(g.ra)

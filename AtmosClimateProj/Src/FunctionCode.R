@@ -16,8 +16,8 @@ library(mapdata)    #some additional hires data
 library(maptools)   #useful tools such as reading shapefiles
 library(mapproj)
 library(PBSmapping)
+library(overlapping)
 set.seed(1234)
-
 
 ##### Writing Bayes DFA model function ####
 warmups <- 1000
@@ -780,7 +780,8 @@ ratio.beta.up<-rbind(up_post%>%filter(period=='1967 - 1988')%>%add_column((up_po
                     rename('beta_diff'=`... - ...`)%>%mutate(Difference="2013:2023 - 1967:1988",Difference2="Era 3 - Era 1"),
                   up_post%>%filter(period=='1967 - 1988')%>%add_column((up_post%>%filter(period=='1989 - 2013')%>%group_by(Index,region))$beta-
                                                                          (up_post%>%filter(period=='1967 - 1988')%>%group_by(Index,region))$beta)%>%select(region,beta,Index,`... - ...`)%>%
-                    rename('beta_diff'=`... - ...`)%>%mutate(Difference="1989:2012 - 1967:1988", Difference2="Era 2 - Era 1"))
+                    rename('beta_diff'=`... - ...`)%>%mutate(Difference="1989:2012 - 1967:1988", Difference2="Era 2 - Era 1"))%>%
+  mutate(region = fct_relevel(region, "SCC","CCC", "NCC"))
 
 
 # plotting functions
@@ -794,7 +795,7 @@ mutate(Index2=ifelse(Index=='seasonal_NPGO','NPGO', ifelse(Index=='seasonal_NPH'
 
 violin.up <-ggplot(ratio.up, aes(x=region, y=beta_diff, fill=region)) +
   theme_bw() +
-  scale_fill_manual(values=col4, name="Region")+
+  scale_fill_manual(values=col4[3:1], name="Region")+
   geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
   # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
   stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
@@ -806,6 +807,7 @@ violin.up <-ggplot(ratio.up, aes(x=region, y=beta_diff, fill=region)) +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) +
   theme(legend.position="bottom")
+violin.up 
 pdf(file = "Output/Figures/violin.pdf",   # The directory you want to save the file in
     width = 6, # The width of the plot in inches
     height = 6)
@@ -861,6 +863,7 @@ violin <-ggplot(ratio, aes(x=survey2, y=ratio, fill=survey2)) +
   ylab("Biological Posterior Difference") +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) + theme(legend.position = "none")
+violin
 pdf(file = "Output/Figures/violin.pdf",   # The directory you want to save the file in
     width = 6, # The width of the plot in inches
     height = 6)
@@ -876,48 +879,48 @@ col<-pnw_palette("Sunset2",3,type="discrete")
 climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
 climate_dat_cop <-readRDS(here('data/physical/climate_dat_cop.rds'))
 bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))%>%
-  mutate(longitude=longitude+360)
+  mutate(longitude=longitude)
 sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
                   agr = "constant")
 
 #### Making the Map #####
 map<-ggplot() +
-  geom_polygon(aes(x=c(-105+360, -113+360, -127+360,-105+360,-105+360),
+  geom_polygon(aes(x=c(-105, -113, -127,-105,-105),
                    y=c(22.1, 22.1,34.4486,34.4486,20)),
                fill='white', col='black',alpha=0.6)+
-  geom_polygon(aes(x=c(-110+360, -127+360,-130+360,-110+360,-110+360), 
+  geom_polygon(aes(x=c(-110, -127,-130,-110,-110), 
                    y=c(34.4486,34.4486,40.4401,40.4401,34.4486)),
                fill='white', col='black',alpha=0.6)+
-  geom_polygon(aes(x=c(-110+360, -130+360,-130+360,-110+360,-110+360), 
+  geom_polygon(aes(x=c(-110, -130,-130,-110,-110), 
                    y=c(40.4401,40.4401,49.5,49.5,40.4401)),
                fill='white', col='black',alpha=0.6)+
   geom_sf(data = world)+
-  annotate("rect", xmin= -121.5+360, xmax = -109+360, ymin = 42, ymax = 48.8, 
+  annotate("rect", xmin= -121.5, xmax = -109, ymin = 42, ymax = 48.8, 
            fill = 'white', col='black',size = 0.8, lwd=0.2) +
   geom_sf(fill='grey95') +
   geom_sf(data = sites, size = c(rep(2,68+35+16), rep(3,2)), 
           shape = c(rep(24,68), rep(21,35),rep(23,16),rep(22,2)), 
           col = c(rep('black',68+35+18)), 
           fill = c(rep(col3[3],68), rep(col3[7],35),rep(col3[5],16),rep(col3[8],2))) +
-  coord_sf(xlim = c(-132+360, -108+360), ylim = c(22, 50), expand = FALSE)+
+  coord_sf(xlim = c(-132, -108), ylim = c(22, 50), expand = FALSE)+
   ylab(" ")+
   xlab(" ")+
   annotation_scale()+
   annotation_north_arrow(which_north = "true",pad_x = unit(0.25, "in"), 
                          pad_y = unit(0.25, "in"))+
-  annotate(geom = "text", x = c(-127+360,-118.5+360,-129+360), y = c(37,28,45), 
+  annotate(geom = "text", x = c(-127,-118.5,-129), y = c(37,28,45), 
            label = str_wrap(c("Central", "Southern","Northern"), width = 20),
            fontface = "italic", color = "grey22", size = 3.75, angle=c('290', '311','270')) +
-  annotate(geom = "text", x = c(-114+360,-114+360,-114+360,-114+360,-114+360), y = c(48,46.5,45, 44,43), 
+  annotate(geom = "text", x = c(-114,-114,-114,-114,-114), y = c(48,46.5,45, 44,43), 
            label = str_wrap(c("Bakun Index","CC Regions", "Newport Line","CalCOFI", "RREAS"), width = 22),
            color = "grey22", size =3.5) +
-  annotate(geom = "text", x = c(-117+360,-113+360), y = c(41,35), 
+  annotate(geom = "text", x = c(-117,-113), y = c(41,35), 
            label = str_wrap(c("Cape Mendocino","Point Conception"), width = 20),
            fontface = "italic", color = "grey22", size = 3) +
-  annotate("rect", xmin= -121+360, xmax = -119+360, ymin = 46, ymax = 47, 
+  annotate("rect", xmin= -121, xmax = -119, ymin = 46, ymax = 47, 
            fill = 'white', col='black',size = 0.8, lwd=0.5) +
-  annotate("line", x= c(-124.1+360, -124.65+360), y = c(44.652, 44.652),col=col2[1],size = 0.8, lwd=1) +
-  annotate("line", x= c(-120.5+360, -119.5+360), y = c(45, 45),col=col2[1],size = 0.8, lwd=1) +
+  annotate("line", x= c(-124.1, -124.65), y = c(44.652, 44.652),col=col2[1],size = 0.8, lwd=1) +
+  annotate("line", x= c(-120.5, -119.5), y = c(45, 45),col=col2[1],size = 0.8, lwd=1) +
   
   theme(panel.background = element_rect(fill = "lightsteelblue2"),
         panel.border = element_rect(fill = NA),panel.grid.major = element_line(colour = "transparent"))
@@ -930,6 +933,7 @@ ggarrange(ggarrange(map, violin.up, ncol = 2, labels = c("A", "B")),violin,  # S
           labels = c("A", "C")                                        # Labels of the scatter plot
 ) 
 dev.off()
+
 
 
 ##### Writing Bayes DFA model function ####

@@ -189,7 +189,7 @@ Survival_combined<-Marine_Survival%>%dplyr::left_join(SST_winter,by=c('ecoregion
  # dplyr::left_join(Beuti_eco_winter, by=c('location', 'calendar_year'))%>%
  # dplyr::left_join(Beuti_eco_spring, by=c('location', 'calendar_year'))%>%
   dplyr::left_join(Bifurcation, by=c('calendar_year'))
-write.csv(Survival_combined, file = "data/Survival_combined.csv")
+write.csv(Survival_combined, file = "data/Salmon/Survival_combined.csv")
 
 ##### Exploratory Plots #####
 data<-read.csv("data/Survival_combined.csv")

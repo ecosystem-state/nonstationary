@@ -1,5 +1,4 @@
 library(ggrepel)
-
 library(strucchange)
 library(ncdf4)
 library(zoo)
@@ -11,10 +10,11 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(mgcv)
-library(strucchange)
+library(PNWColors)
+
 
 # reading in the data 
-schroeder.nph <-read.csv('data/physical/year_mon_area_max_x_y_new.csv')%>%
+schroeder.nph <-read.csv('data/physical/year_mon_area_max_x_y_lon_lat_2023.csv')%>%
   mutate(era= ifelse(Year<=1988,1, ifelse(Year>2012,3,2)))%>% #assigning eras
   mutate(Year_win = if_else(Month == 11|Month ==12, Year+1, Year))%>% #creating a year offset fro winter
   mutate(dec.yr =as.numeric(as.character(Year)) + (as.numeric(Month)-0.5)/12, #creating a decimal year
@@ -114,19 +114,21 @@ theme_set(theme_classic())
 #spring.schroeder<-winter.schroeder
 #plotting location
 col<-pnw_palette("Sunset2",3,type="discrete")
-a.plot <-ggplot(data=spring.schroeder,aes(mean.x,mean.y, label=Year,group=era.lab,col=era.lab))+
+a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,group=era.lab,col=era.lab))+
   geom_text(col='grey')+
   ggtitle("Center of North Pacific High") +
   geom_point(data=means)+
   theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
         axis.title.y = element_text(size=7)) +
   geom_errorbar(data=means,aes(ymin = mean.y-sd.y, ymax=  mean.y+sd.y), width=0.5) +
-  geom_errorbar(data=means,aes(xmin = mean.x-sd.x, xmax=  mean.x+sd.x), width=0.5) +
+  geom_errorbar(data=means,aes(xmin = abs(mean.x-360)-sd.x, xmax=  abs(mean.x-360)+sd.x), width=0.5) +
   scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
-  ylab('y (ºN)')+
+  scale_x_reverse(lim=c(147,135))+
+  ylab('Latitude (ºN)')+
   theme_bw() +
-  xlab('x (ºW)')
+  xlab('Longitude (ºW)')
 a.plot
+
 
 h.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
   geom_point()+
@@ -345,3 +347,4 @@ f.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
   xlim(1967,2020)
 f.plot
+
