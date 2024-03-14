@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.0.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Analysis Summary</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="AnalysisSummary_files/libs/clipboard/clipboard.min.js"></script>
+<script src="AnalysisSummary_files/libs/quarto-html/quarto.js"></script>
+<script src="AnalysisSummary_files/libs/quarto-html/popper.min.js"></script>
+<script src="AnalysisSummary_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="AnalysisSummary_files/libs/quarto-html/anchor.min.js"></script>
+<link href="AnalysisSummary_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="AnalysisSummary_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="AnalysisSummary_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="AnalysisSummary_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="AnalysisSummary_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Analysis Summary</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="summary-plots" class="level3">
+<h3 class="anchored" data-anchor-id="summary-plots">Summary Plots</h3>
+<div class="cell">
+
+</div>
+<p><strong>Figure 1</strong>: Distribution of upwelling data relative to regional delineations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>map</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/upwelling-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Figures 2 and 3 are purely exploratory to visualize patterns in upwelling and climate indices through time. Linear trends have been added to the temporal data to examine the breakpoints. These would not be a main text figure but may be included in a supplement.</p>
+<p><strong>Figure 2</strong>: Trends in upwelling through time by region. Spring upwelling model appears to have a 1988/1989 shift. Evidence for another shift are less pronounced. in the Northern CC 2022 actually appears to be anomalous, where it is pulling the the trend down that would normally be positive.</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/uptrend-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 3</strong>: Trends in climate indices through through time. Evidence for a 1988/1989 PDO shift is not evident in ONI or NPGO. NPGO appear to have a bigger change in the past decade compared to the 1989/1988 shift.</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/indextrend-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+
+</div>
+</section>
+<section id="objective-1" class="level3">
+<h3 class="anchored" data-anchor-id="objective-1">Objective 1</h3>
+<p><strong>Objective 1</strong>: Identify how atmospheric (sea level pressure) and climate (SST) dynamics have changed through time across the NE Pacific with an emphasis on the marine heatwave regime.</p>
+<p><strong>Approach</strong>: Self organizing maps identify dominant spatial patterns in SLP and SST. The benefit of SOMs is information extraction (without prior knowledge such as a priori temporal breaks) and visualization of multidimensional data. We investigate objective 1 by:</p>
+<ol type="1">
+<li><p>Applying SOMs to SLP and SST data to identify how spatial patterns in SLP and SST group over time.</p></li>
+<li><p>Compare results of analysis with global trend included and removed to identify how global trends are driving patterns.</p></li>
+</ol>
+<p><strong>Summary</strong>: For SST we find that the dominant spatial patterns changed around 1977. Prior to this period we observe frequent cool phase PDO patterns (node 1) and oscillations with warm phase patterns (node 5). Less pronounced and less frequent patterns were also observed, specifically nodes 2 and 3 which are predominantly associated with positive NPGO and ENSO respectively (Figure 5). Node 5 is associated with negative NPGO, nodes 1 and 2 is associated with positive NPGO and node 3 is associated with positive ENSO. After 1977, we only observe one occurrence of the strong cool phase (node 1) and instead we see more frequent occurrences of the NPGO-ENSO associated patterns, nodes 2 and 3 (18 years post 1977; 7 years prior 1977). In addition we see a change in the spatial patterns of the warm phase nodes, specifically the arrival of node 6 and the absence of node 5 since 1998. This extreme warm pattern has also persisted every year since 2014 (Figure 4). Notable, the marine heatwave node (node 6) shows no clear association with climate indices (Figure 5) with positive and negative values present for all indices. When the global trend is removed from the SST data, we observe clear oscillation to “classic” warm (node 2) and cold (node 5) spatial patterns. We do also see transitional spatial patterns (all other nodes) that are not associated with specific positive/negative climate indices but most notably, we do not see any major shifts in frequency of a given spatial pattern through time. Notably, multiple years since 2014 map onto the cold phase (nodes 1 and 2) in the absence of the global trend (Figure 6 &amp; 7).</p>
+<p>Similar to SST, we find two time periods of change based on the SLP SOM analysis, the first in 1977 and the second in 2000. These are fairly established break points in some atmospheric literature (see Wills et al.&nbsp;2019, 2020). ENSO demonstrates a clear association with the SLP spatial patterns with nodes 1 and 2 associated with La Nina conditions and node 5 associated with El nino conditions (Figures 8 and 9). Prior to 1999 the spatial pattern associated with La Nina events was predominantly node 2 with only 5 occurrences of node 1. After 1999 the spatial SLP conditions associated with La Nina were primarily node 1 (11 occurrences). With the global trend removed we no longer observe a delineation in 2000 and we also see a much stronger association with NPI and fewer associations with other .</p>
+<p><strong>NOTE</strong> PDO and likely NPI datasets that are directly accessed have are detrended (likely the same for NPGO?), it may be useful to use derive PDO with the trend, but part of the utility of looking at these climate indeces is to understand how what indices that are commonly used may not fully reflect the same conditions that they have historically so I think an argument could be made for either (or both). This is likely why we observed stronger relationships between NPI-SLP and PDO-SST with the detrended SOMs</p>
+<section id="sst-analysis" class="level4">
+<h4 class="anchored" data-anchor-id="sst-analysis">SST Analysis</h4>
+<section id="global-trend-included" class="level5">
+<h5 class="anchored" data-anchor-id="global-trend-included">Global Trend Included</h5>
+<p><strong>Figure 4</strong>: Dominant spatial patterns in Spring (April - June) of North Pacific SST anomalies from 1940 - 2023 with the global trend included. Node 6 only occurs after 1996 and almost exclusively during the marine heat wave era. Nodes 1 and 5 only occurred before 1996.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="1152"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 5</strong>: Association between spatial patterns (SOM nodes) and climate indices. These plots are intended to intepret spatial patterns of the SOMs</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="global-trend-removed" class="level5">
+<h5 class="anchored" data-anchor-id="global-trend-removed">Global Trend Removed</h5>
+<p><strong>Figure 6</strong>: Dominant spatial patterns in Spring (April - June) of North Pacific SST anomalies from 1940 - 2023 with the global trend removed. Altogether this illustrates that the recent patterns observed during the MHW era are predominantly driven by global trends in SST and in the absence of that trend spatial patterns in SST resemble common trends observed historically, particularly nodes 5 and 2 which are a classic PDO pattern.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="1152"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 7</strong>: Association between spatial patterns (SOM nodes) and climate indices. These plots are intended to intepret spatial patterns of the SOMs</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="slp-anlysis" class="level4">
+<h4 class="anchored" data-anchor-id="slp-anlysis">SLP Anlysis</h4>
+<section id="global-trend-included-1" class="level5">
+<h5 class="anchored" data-anchor-id="global-trend-included-1">Global Trend Included</h5>
+<p><strong>Figure 8</strong>: Dominant spatial patterns in Winter (November - March) of North Pacific SLP anomalies from 1940 - 2023 with the global trend included. There are no dominant patterns through time, but spatial patterns that reflect PDO and NPGO forcing are not evident.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="1152"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 9</strong>: Association between spatial patterns (SOM nodes) and climate indices. These plots are intended to interpret spatial patterns of the SOMs</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="global-trend-removed-1" class="level5">
+<h5 class="anchored" data-anchor-id="global-trend-removed-1">Global Trend Removed</h5>
+<p><strong>Figure 10</strong>: Dominant spatial patterns in Winter (November - March) of North Pacific SLP anomalies from 1940 - 2023 with the global trend removed. Removal of the global trend uncovers more PDO (nodes 1 and 6) and NPGO (nodes 3,4,5) forcing patterns. There are not dominant forcing patterns during the marine heat wave era.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="1152"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 11</strong>: Association between spatial patterns (SOM nodes) and climate indices. These plots are intended to interpret spatial patterns of the SOMs</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="upwelling-and-atmospheric-forcing" class="level3">
+<h3 class="anchored" data-anchor-id="upwelling-and-atmospheric-forcing">Upwelling and Atmospheric Forcing</h3>
+<section id="objective-2" class="level4">
+<h4 class="anchored" data-anchor-id="objective-2">Objective 2</h4>
+<p><strong>Objective 2</strong>: Evaluate evidence for SST/SLP - upwelling dynamics.</p>
+<p>SOM models indicate a change in climate and atmospheric relationships since 2000 for SLP and 2013 for SST. Particularly SST shows no association with climate indices since the marine heatwave era (node 6, Figure 5). Here we examine associations between SST, SLP and upwelling have changed on regional scales.</p>
+<p><strong>Approach</strong> This section includes correlation analysis to identify changes in the relationships between SST and SLP with regional upwelling indices. We apply a breakpoint analysis (1967 - 1988; 1989 - 2013; 2013 - 2022) examining regional differences (Figure 1) in associations.</p>
+<p><strong>Summary</strong> In the GoA, southern California Current and central California Current there is a strengthening between basin-wide SST patterns and upwelling. These spatial relationships resemble the PDO/NPGO. Notably, in the 2013 - 2022 period CCC seems to be dominated more by and NPGO - like forcing pattern compared to the two earlier eras. In contrast, the relationship between basin-wide SST patterns and upwelling dynamics in the NCC demonstrate PDO-like patterns throughout time, but show a sign reversal in the 2013-2022 period indicating SST patterns that were previously conducive to upwelling conditions actually produce downwelling conditions in the most recent era. Similarly, the GOA showed evidence of PDO dominated relationship in the earliest era,but it appears to be somewhere between a PDO-NPGO pattern during the MHW era.Altogether, the relationship between basin wide SST and upwelling has changed in the past decade which is likely due at least partially to global trends in SST (see SOM models). This, combined with the changing correlations between NPGO-PDO mean the interpretation of NPGO and PDO for upwelling conditions is also changing, and may not reflect these indices may not reflect the same ecologically important conditions that have been used to interpret climate indices in the past.</p>
+<p>There appears to be a strengthening of the relationship between upwelling with the Aleutian low - like patterns during the marine heatwave era (Figure 12) but the direction of this relationship is regionally specific. We also know from the SOM modelling, that this time period was characterized by spatial patterns of SLP that are associated with a weak Aleutian Low and La Nina conditions. However, we do not observe distinct patterns through time for upwelling since the MHW era (Figure 2). This means we are not observing a change in SLP driving changes in upwelling, but rather increased coupling driven by SLP patterns characteristic of a weak Aleutian Low.</p>
+</section>
+<section id="sst-analysis-1" class="level4">
+<h4 class="anchored" data-anchor-id="sst-analysis-1">SST Analysis</h4>
+<p><strong>Figure 11</strong>: Correlations (slope) between regional upwelling (regions correspond Bakun indices described on map) and sea surface temperature. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al.&nbsp;2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/sstcorrplot-1.png" class="img-fluid" width="1056"></p>
+</div>
+</div>
+</section>
+<section id="slp-analysis" class="level4">
+<h4 class="anchored" data-anchor-id="slp-analysis">SLP Analysis</h4>
+<p><strong>Figure 12</strong>: Correlations (slop) between spring regional upwelling (regions correspond Bakun indices described on map) and winter sea level pressure anomaly. These correlations are based on three time periods: 1967-1988, 1989 - 2012, 2013 - 2022. 1988 marks a shift in Aleutian low variability, and increase in Winter SST anomaly, and a change in the correlation between PDO - NPGO (see Litzow et al.&nbsp;2020 PNAS). This period also marks a change in upwelling in upwelling anomaly. 2013 marks an increase in both spring and winter SST with some evidence for changed in NPGO, PDO, and ENSO but no apparent change in upwelling anomaly. NOTE: these are anomalies (deviation from the 1967 - 2022 mean) but are not standardized anomalies - using standardized anomalies, anomalies, and raw SLP all produce similar patterns and we can choose which one to use based on interpretability of the slope coefficient.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/slpcorrplot-1.png" class="img-fluid" width="1056"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/slpcorrindex-1.png" class="img-fluid" width="1056"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/sstcorrindex-1.png" class="img-fluid" width="1056"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="upwelling-and-climate-indices" class="level3">
+<h3 class="anchored" data-anchor-id="upwelling-and-climate-indices">Upwelling and Climate Indices</h3>
+<section id="objective-3" class="level4">
+<h4 class="anchored" data-anchor-id="objective-3">Objective 3</h4>
+<p><strong>Objective 3</strong>: Identify decoupling between upwelling and basin scale ocean indices (PDO, NPGO, ENSO, NPI) during the marine heatwave era</p>
+<p><strong>Approach</strong>: Bayesian linear model with region-level factors (GoA, NCC, CCC, SCC) delineated based on Figure 1 using breakpoints for 1967 - 1988; 1989 - 2013; 2014 - 2023.</p>
+<p><strong>Summary</strong>: <em>PDO</em>: PDO tends to be most associated with vertical transport and isopycnal depth in the NCC. It is also associated with source depth and density in the NCC and CCC (Figure 17). Generally, PDO is negatively associated with upwelling. Historically, we find evidence of this negative relationship historically across all of the California Current (Figure 13b) but we find a dramatic change in the relationship between upwelling and PDO in the NCC during the MHW era (Figure 13) where the the correlation switches from negative to positive. We do not find evidence for a MHW change in the other regions. This finding is in agreement with the correlation analysis, where we find a complete reversal of the slope coefficients between NCC upwelling and SST in the MHW era compared to the earlier periods (Figure 11).</p>
+<p><em>NPGO</em>: NPGO is positively associated with upwelling and is more associated with vertical transport in the SCC and source depth in the SCC and NCC (Figure 17). We find the relationship between upwelling and NPGO was similar during MHW era and the historic era (1967 - 1988) and did not differ substantially from 0 (weakly negative slope; Figure 13) indicating NPGO-upwelling not closely coupled during this period. However, the relationship was strongly coupled with a positive slope during the 1989 - 2013 period. Notably, NPGO values have been exceptionally negative during the MHW era - including the 3 most negative observations - resulting in a change in the intercept of the relationship.</p>
+<p><em>ENSO</em>: The relationship between ENSO-upwelling is similar to that of PDO-upwelling. Specifically, we find a consistent, negative relationship in the California Current, with a strengthening of that relationship in SCC and CCC consistent with the correlation analysis results. Similar to PDO, we find a reversal of the slope coefficient during the MHW era from negative to positive in NCC.</p>
+<p><em>NPI</em>: we do not find any strong relationships between NPI-upwelling. We do find a reversal of the relationship during the MHW era compared to the earliest period (1967-1988) for the GoA and NCC and a strengthening (more positive) of the association in CCC and SCC (Figure 16) consistent with the correlation analysis of SLP, but posterior distributions of the slope overlap with 0 (Figure 12). We do find a more positive intercept, consistent with an increase of index values representative of a weakening of the Aleutian Low during the MHW era.</p>
+</section>
+<section id="pdo---upwelling" class="level4">
+<h4 class="anchored" data-anchor-id="pdo---upwelling">PDO - Upwelling</h4>
+<p><strong>Figure 13</strong>: Relationship between spring upwelling and spring PDO based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/PDO-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/PDO-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/PDO-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/PDO-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="npgo---upwelling" class="level4">
+<h4 class="anchored" data-anchor-id="npgo---upwelling">NPGO - Upwelling</h4>
+<p><strong>Figure 14</strong>: Relationship between upwelling and NPGO based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPGO-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPGO-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPGO-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPGO-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="enso---upwelling" class="level4">
+<h4 class="anchored" data-anchor-id="enso---upwelling">ENSO - Upwelling</h4>
+<p><strong>Figure 15</strong>: Relationship between upwelling and ENSO based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/ENSO-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/ENSO-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/ENSO-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/ENSO-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="nph---upwelling" class="level4">
+<h4 class="anchored" data-anchor-id="nph---upwelling">NPH - Upwelling</h4>
+<p><strong>Figure 16</strong>: Relationship between upwelling and NPH based on a) linear relationship b) posterior estimates for the slope and c) posterior estimates for intercept</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPI-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPI-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPI-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/NPI-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="AnalysisSummary_files/figure-html/fullplot-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Figure 17</strong>: Reproduced from Mike Jacox for reference</p>
+<p><strong>Preliminary Conclusions</strong>: Our results show distinct spatial patterns in SLP and SST since 2000 compared to the pre-2000 record with an exceptional pattern of SST from 2014 - 2022 that had not been observed prior to 1996. Spatial patterns of SLP are associated with weak Aleutian Low and La Nina conditions that have also been observed in recent years. There is evidence of non-stationary relationships between upwelling, climate indices and forcing mechanisms, particularly during the MHW era in the Northern California Current. We found that the relationship between SST-upwelling and SLP-upwelling reversed from 2013 - 2022 in the NCC. We observed similar reversals between ENSO-upwelling and PDO-upwelling in the NCC during the MHW era. We also find evidence of moderate strengthening relationships between ENSO-upwelling and PDO-upwelling in the CCC and SCC driven by changes in the SST and SLP upwelling relationships in these regions. Altogether, these results indicate changing environmental meaning of climate indices, particularly ENSO and PDO, driven by global trends in forcing mechanisms, specifically SLP and SST. Further, we show evidence of prolonged and persistent change in SLP and SST since 2000 and at least since 2014. Applications of climate indices in ecological analyses should consider their environmental and ecological meanings differ from historical interpretations during the MHW era.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
