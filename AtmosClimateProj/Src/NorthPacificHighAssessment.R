@@ -11,7 +11,7 @@ library(ggplot2)
 library(ggpubr)
 library(mgcv)
 library(PNWColors)
-
+library(ggspatial)
 
 # reading in the data 
 schroeder.nph <-read.csv('data/physical/year_mon_area_max_x_y_lon_lat_2023.csv')%>%
@@ -99,10 +99,12 @@ winter.schroeder <- schroeder.nph%>%
 means <- spring.schroeder%>%
   group_by(era.lab)%>%
   summarise(x=mean(mean.x),y=mean(mean.y),sd.x=sd(mean.x), sd.y=sd(mean.y),
-            area=mean(mean.max),intensity=mean(mean.area),sd.area=sd(mean.max), sd.intensity=sd(mean.area),
+            area=mean(mean.max),intensity=mean(mean.area),
+            sd.area=sd(mean.max), sd.intensity=sd(mean.area),
             Year=0)%>%
   rename(mean.x=x, mean.y=y,mean.area=intensity, mean.max=area )
 theme_set(theme_classic())
+
 
 means2 <- winter.schroeder%>%
   group_by(era.lab)%>%
@@ -128,6 +130,21 @@ a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,gro
   theme_bw() +
   xlab('Longitude (ºW)')
 a.plot
+
+j.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
+  geom_text(alpha=0.4)+
+  ggtitle("North Pacific High\n Areal Extent and Intensity") +
+  geom_point(data=means)+
+  theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
+        axis.title.y = element_text(size=7)) +
+  geom_errorbar(data=means,aes(xmin = mean.area-sd.area, xmax= mean.area+sd.area), width=0.5) +
+  geom_errorbar(data=means,aes(ymin = mean.max-sd.intensity, ymax= mean.max+sd.intensity), width=0.5) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  #scale_x_reverse(lim=c(147,135))+
+  ylab('North Pacific High \n Intensity (hPa)')+
+  theme_bw()+
+  xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
+j.plot
 
 
 h.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
@@ -239,7 +256,7 @@ plot.dat$mean <- pred$fit
 c.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   geom_line(size=0.2) +
   geom_line(aes(year, mean), color=cb[6], size=0.4)  +  theme_bw() +
-  ylab("Standard deviation (hPa)") +
+  ylab("Standard deviation \n (hPa)") +
   xlab("")+
   ggtitle("North Pacific High Intensity Variability (Spring)") +
   geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
@@ -347,4 +364,69 @@ f.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
   xlim(1967,2020)
 f.plot
+
+##### Jumbo Plot ####
+
+#### Map Data #####
+col2<-pnw_palette("Sunset2",4,type="discrete")
+col<-pnw_palette("Sunset2",3,type="discrete")
+col3<-pnw_palette("Sunset2",8,type="continuous")
+
+col<-pnw_palette("Sunset2",3,type="discrete")
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+climate_dat_cop <-readRDS(here('data/physical/climate_dat_cop.rds'))
+bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))%>%
+  mutate(longitude=longitude)
+sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
+                  agr = "constant")
+
+#### Making the Map #####
+map<-ggplot() +
+  geom_polygon(aes(x=c(-105, -113, -127,-105,-105),
+                   y=c(22.1, 22.1,34.4486,34.4486,20)),
+               fill='white', col='black',alpha=0.6)+
+  geom_polygon(aes(x=c(-110, -127,-130,-110,-110), 
+                   y=c(34.4486,34.4486,40.4401,40.4401,34.4486)),
+               fill='white', col='black',alpha=0.6)+
+  geom_polygon(aes(x=c(-110, -130,-130,-110,-110), 
+                   y=c(40.4401,40.4401,49.5,49.5,40.4401)),
+               fill='white', col='black',alpha=0.6)+
+  geom_sf(data = world)+
+  annotate("rect", xmin= -121.5, xmax = -109, ymin = 42, ymax = 48.8, 
+           fill = 'white', col='black',size = 0.8, lwd=0.2) +
+  geom_sf(fill='grey95') +
+  geom_sf(data = sites, size = c(rep(2,68+35+16), rep(3,2)), 
+          shape = c(rep(24,68), rep(21,35),rep(23,16),rep(22,2)), 
+          col = c(rep('black',68+35+18)), 
+          fill = c(rep(col3[3],68), rep(col3[7],35),rep(col3[5],16),rep(col3[8],2))) +
+  coord_sf(xlim = c(-132, -108), ylim = c(22, 50), expand = FALSE)+
+  ylab(" ")+
+  xlab(" ")+
+  annotation_scale()+
+  annotation_north_arrow(which_north = "true",pad_x = unit(0.25, "in"), 
+                         pad_y = unit(0.25, "in"))+
+  annotate(geom = "text", x = c(-127,-118.5,-129), y = c(37,28,45), 
+           label = str_wrap(c("Central", "Southern","Northern"), width = 20),
+           fontface = "italic", color = "grey22", size = 3.75, angle=c('290', '311','270')) +
+  annotate(geom = "text", x = c(-114,-114,-114,-114,-114), y = c(48,46.5,45, 44,43), 
+           label = str_wrap(c("Bakun Index","CC Regions", "Newport Line","CalCOFI", "RREAS"), width = 22),
+           color = "grey22", size =3.5) +
+  annotate(geom = "text", x = c(-120.5,-117), y = c(41,35), 
+           label = str_wrap(c("Cape Mendocino","Point Conception"), width = 20),
+           fontface = "italic", color = "grey22", size = 3) +
+  annotate("rect", xmin= -121, xmax = -119, ymin = 46, ymax = 47, 
+           fill = 'white', col='black',size = 0.8, lwd=0.5) +
+  annotate("line", x= c(-124.1, -124.65), y = c(44.652, 44.652),col=col2[1],size = 0.8, lwd=1) +
+  annotate("line", x= c(-120.5, -119.5), y = c(45, 45),col=col2[1],size = 0.8, lwd=1) +
+  
+  theme(panel.background = element_rect(fill = "lightsteelblue2"),
+        panel.border = element_rect(fill = NA),panel.grid.major = element_line(colour = "transparent"))
+
+map 
+#### JUMBO Plot #####
+pdf("Output/Fig JumboV2.pdf", 11,8) 
+ggarrange(ggarrange(map,ggarrange(a.plot,j.plot, nrow = 2, labels = c("B", "C")),
+                    ncol=2,labels = c("A", "")), c.plot,labels = c("", "D"),nrow=2,heights=c(2,0.75))
+dev.off()
+
 
