@@ -138,6 +138,81 @@ bakun_time <-bakun_summ%>%
 bakun_monthly <- bakun_time%>%
   select(Month, region, Year_lag, monthly_mean, stand_bakun_monthly)
 bakun_time%>%filter(Year_lag==2023&season=='Spring')
+
+#### Importing Phenology Data ####
+
+TUMIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_48N.csv'))%>%
+  mutate(station_id='48N')%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_45N.csv'))%>%mutate(station_id='45N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_42N.csv'))%>%mutate(station_id='42N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_39N.csv'))%>%mutate(station_id='39N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_36N.csv'))%>%mutate(station_id='36N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_33N.csv'))%>%mutate(station_id='33N'))
+
+TUMIdat <- TUMIdat%>%
+  add_column('Year'=as.numeric(format(as.Date(TUMIdat$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(TUMIdat$time),"%m")))%>%
+  add_column("Day"=as.numeric(format(as.Date(TUMIdat$time),"%d")))
+
+STIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_48N.csv'))%>%
+  mutate(station_id='48N')%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_45N.csv'))%>%mutate(station_id='45N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_42N.csv'))%>%mutate(station_id='42N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_39N.csv'))%>%mutate(station_id='39N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_36N.csv'))%>%mutate(station_id='36N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_33N.csv'))%>%mutate(station_id='33N'))
+
+STIdat <- STIdat%>%
+  add_column('Year'=as.numeric(format(as.Date(STIdat$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(STIdat$time),"%m")))%>%
+  add_column("Day"=as.numeric(format(as.Date(STIdat$time),"%d")))
+STIdat%>%filter(station_id=='48N')
+
+LUSIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_48N.csv'))%>%
+  mutate(station_id='48N')%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_45N.csv'))%>%mutate(station_id='45N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_42N.csv'))%>%mutate(station_id='42N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_39N.csv'))%>%mutate(station_id='39N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_36N.csv'))%>%mutate(station_id='36N'))%>%
+  bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_33N.csv'))%>%mutate(station_id='33N'))
+
+LUSIdat <- LUSIdat%>%
+  add_column('Year'=as.numeric(format(as.Date(LUSIdat$time),"%Y")))%>%
+  add_column('Month'=as.numeric(format(as.Date(LUSIdat$time),"%m")))%>%
+  add_column("Day"=as.numeric(format(as.Date(LUSIdat$time),"%d")))
+
+phendat <- LUSIdat%>%left_join(STIdat)%>%
+  left_join(TUMIdat)
+
+phen_region <- phendat%>%
+  filter(station_id=='36N'|station_id=='39N')%>%
+  mutate(region="Central CC")%>%
+  bind_rows(phendat%>%
+              filter(station_id=='33N'|station_id=='30N'|station_id=='27N'|station_id=='24N')%>%
+              mutate(region="Southern CC"))%>%
+  bind_rows(phendat%>%
+              filter(station_id=='42N'|station_id=='45N'|station_id=='48N')%>%
+              mutate(region="Northern CC"))%>%
+  bind_rows(phendat%>%
+              filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
+              mutate(region="GoA"))
+
+
+phen_stand <- phen_region%>%
+  group_by(region, Year) %>%
+  summarise(lusi_mean = mean(lusi), sti_mean=mean(sti), tumi_mean=mean(tumi))%>%
+  ungroup()%>%
+  group_by(region)%>%
+  mutate(lusi_annual_mean = mean(lusi_mean), lusi_annual_sd=sd(lusi_mean),
+         sti_annual_mean = mean(sti_mean), sti_annual_sd=sd(sti_mean),
+         tumi_annual_mean = mean(tumi_mean), tumi_annual_sd=sd(tumi_mean))%>%
+  ungroup()%>%
+  mutate(stand_lusi = (lusi_mean-lusi_annual_mean)/lusi_annual_sd,
+         stand_sti = (sti_mean-sti_annual_mean)/sti_annual_sd,
+        stand_tumi = (tumi_mean-tumi_annual_mean)/tumi_annual_sd)%>%
+  select(Year, region,stand_tumi,stand_sti,stand_lusi)%>%
+  rename(Year_lag=Year)
+
 ##### PDO ##### 
 #### Climate Indices ####
 
@@ -310,8 +385,9 @@ copepod_seasonal<-copepod_seasonal%>%
   mutate(period=ifelse(Year_lag>2012,3,2))
 
 ### Compile  with Upwelling Indices to Dataframe ####
-
+unique(bakun_time$region)
 climate_dat <- bakun_time%>%
+  left_join(phen_stand, by=c('region', 'Year_lag'))%>%
   merge(PDO, by=c('Month', 'Year_lag'))%>%
   # merge(PDO_annual, by=c('Year_lag'))%>%
   merge(PDO_seasonal, by=c('season', 'Year_lag'))%>%
@@ -327,9 +403,10 @@ climate_dat <- bakun_time%>%
   left_join(NPGO_annual, by=c('Year_lag'))%>%
   left_join(NPGO_seasonal, by=c('season', 'Year_lag'))
 
-
+colnames(climate_dat)
 climate_dat <- climate_dat%>%
-  select(Year_lag, region, season, stand_bakun_seasonally,stand_bakun_annual,period, 
+  select(Year_lag, region, season, stand_bakun_seasonally,period,stand_tumi,           
+         stand_sti, stand_lusi,
          era.region, seasonal_PDO, annual_NPGO, seasonal_NPGO, annual_ONI, seasonal_ONI,
          annual_NPH, seasonal_NPH)%>%
   distinct()

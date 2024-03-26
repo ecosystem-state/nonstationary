@@ -470,7 +470,7 @@ RREAS<- bind_rows(RREAS,RREAS_full)%>%
 index.names <- unique(RREAS$Index)
 period.names <- unique(RREAS$period)
 overlap.RREAS <- NA
-  for(i in 1:4){
+ for(i in 1:4){
     temp <- RREAS%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
     ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
     ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
@@ -1019,14 +1019,133 @@ for(j in 1:4){
 }
 
 overlap.upW
+
+
+##### Phenology Model Runs #####
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+season <- "Spring"
+eras <- data.frame(era.region2=seq(1,9), era.region=seq(4,12))
+data<- climate_dat%>%filter(season=="Spring"&region!='GoA'&Year_lag<2023)%>%
+  #  filter(Year_lag!=2022&Year_lag!=2015)%>%
+  distinct()%>%
+  left_join(eras)
+
+data.phe.lm<-data%>%filter(season=="Spring")%>%
+  dplyr::select(Year_lag, season, period,region,stand_tumi,stand_lusi,stand_sti,stand_bakun_seasonally,
+                seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
+  rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
+  distinct()%>%
+  pivot_longer(!c(Year_lag, season, period,region,stand_tumi,stand_lusi,stand_sti,stand_bakun_seasonally), 
+               names_to = "Index_Name", values_to = "Index_Value")%>%
+  pivot_longer(!c(Year_lag, season,period,region, Index_Value, Index_Name), 
+               names_to = "Up_Name", values_to = "Up_Value")%>%
+  distinct()
+ggplot(data = data.phe.lm%>%filter(region=="Northern CC"), aes(y = Up_Value, x =Index_Value,col=as.factor(period))) +
+  facet_grid(Index_Name~Up_Name, scales='free') +
+  geom_point(aes(col=as.factor(period))) +
+  # geom_text(aes(label=Year_lag,col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, col='grey') +
+  scale_y_continuous(name = "Index of Abundance") +
+  scale_color_manual(values =  col[1:3], name="Period",labels=c('1967 - 1988', '1989 - 2012','2013 - 2022'))+
+  theme_bw()+
+  xlab("Climate Index Value")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle("Spring")
+###### STI #######
+STI<-NULL
+columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
+           which(colnames(data) == "seasonal_NPH"),which(colnames(data) == "seasonal_ONI"))
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_sti, data$era.region2)
+  STI <-rbind(STI,scaled.anom)
+}
+STI<-STI%>%mutate(survey="STI",era.region2=period,
+                Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                  ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Spring', lag=0, era.region=era.region2)
+
+
+ggplot(STI, aes(x = beta, fill = as.factor(period))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 3, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+postplot(STI, STI$beta)
+postplot(STI,STI$alpha)
+
+
+###### LUSI #######
+LUSI<-NULL
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_lusi, data$era.region2)
+  LUSI <-rbind(LUSI,scaled.anom)
+}
+LUSI<-LUSI%>%mutate(survey="LUSI",era.region2=period,
+                  Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                    ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Spring', lag=0, era.region=era.region2)
+
+
+ggplot(LUSI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+
+###### TUMI #######
+TUMI<-NULL
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_tumi, data$era.region2)
+  TUMI <-rbind(TUMI,scaled.anom)
+}
+TUMI<-TUMI%>%mutate(survey="TUMI",era.region2=period,
+                    Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                      ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Spring', lag=0, era.region=era.region2)
+
+
+ggplot(TUMI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+
+
+
+
 #####BIOLOGICAL VERSUS UPWELLING ####
 ###### Spring #####
 
 
 upwelling_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))%>%
+  filter(season=="Spring"&region!='GoA'&Year_lag<2023)%>%
+
   mutate(region=ifelse(region=='Southern CC','SCC',
                 ifelse(region=="Northern CC", 'NCC','CCC')))%>%
-  dplyr::select(Year_lag,  period,region, season, stand_bakun_seasonally)
+  dplyr::select(Year_lag,  period,region, season, stand_bakun_seasonally,
+                stand_tumi,stand_lusi,stand_sti)
 
 dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%
   mutate(period=ifelse(Year_lag<1989,1,ifelse(Year_lag>2012,3,2)))%>%
@@ -1035,8 +1154,10 @@ dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%
   dplyr::select(Year_lag, region, trend,  estimate)%>%
   filter(region!=0)%>%
   distinct()%>%
+  filter(season=="Spring"&region!='GoA'&Year_lag<2023)%>%
   merge(upwelling_dat%>%filter(season=="Spring"))%>%
   distinct()
+
 climate_dat_RREAS<-filter(dfa, trend=="RREAS", period==2|period==3)
 climate_dat_CALCOFI<-filter(dfa, trend=="CALCOFI")
 
@@ -1052,87 +1173,100 @@ climate_dat_cop_northern<-filter(climate_dat_cop, trend=="seasonal_copepod_north
 climate_dat_cop_southern<-filter(climate_dat_cop, trend=="seasonal_copepod_southern")
 
 bioup_NCC_northern <-NULL
-columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"))
+columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"),
+           which(colnames(climate_dat_cop_northern) == "stand_lusi"),
+           which(colnames(climate_dat_cop_northern) == "stand_tumi"),
+           which(colnames(climate_dat_cop_northern) == "stand_sti"))
 for(i in 1:length(columns)){
   bayeslinmod(climate_dat_cop_northern, columns[i],  climate_dat_cop_northern$estimate, climate_dat_cop_northern$period)
   bioup_NCC_northern <-rbind(bioup_NCC_northern,scaled.anom)
 }
 bioup_NCC_northern_spring<-mutate(bioup_NCC_northern, period=ifelse(period==1,2,3),
-                                  Survey="N. Copepod",region="NCC")
+                                  Survey="N. Copepod",region="NCC",
+                                  Index=ifelse(Index=="stand_bakun_seasonally", "Upwelling", 
+                                          ifelse(Index=="stand_sti", "STI",
+                                              ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
 
-bioup_NCC_northern_full <-NULL
-columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_northern, columns[i],  climate_dat_cop_northern$estimate, climate_dat_cop_northern$trend)
-  bioup_NCC_northern_full <-rbind(bioup_NCC_northern_full,scaled.anom)
-}
-bioup_NCC_northern_spring_full<-mutate(bioup_NCC_northern_full, period=4,
-                                       Survey="N. Copepod",region="NCC")
+
+#bioup_NCC_northern_full <-NULL
+#columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"))
+#for(i in 1:length(columns)){
+#  bayeslinmod(climate_dat_cop_northern, columns[i],  climate_dat_cop_northern$estimate, climate_dat_cop_northern$trend)
+#  bioup_NCC_northern_full <-rbind(bioup_NCC_northern_full,scaled.anom)
+#}
+#bioup_NCC_northern_spring_full<-mutate(bioup_NCC_northern_full, period=4,
+#                                       Survey="N. Copepod",region="NCC")
 
  
 bioup_NCC_southern <-NULL
-columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
 for(i in 1:length(columns)){
   bayeslinmod(climate_dat_cop_southern, columns[i],  climate_dat_cop_southern$estimate, climate_dat_cop_southern$period)
   bioup_NCC_southern <-rbind(bioup_NCC_southern,scaled.anom)
 }
 bioup_NCC_southern_spring<-mutate(bioup_NCC_southern, period=ifelse(period==1,2,3),
-                           Survey="S. Copepod",region="NCC")
+                                  Survey="S. Copepod",region="NCC",
+                                  Index=ifelse(Index=="stand_bakun_seasonally", "Upwelling", 
+                                               ifelse(Index=="stand_sti", "STI",
+                                                      ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
 
-bioup_NCC_southern_full <-NULL
-columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_southern, columns[i],  climate_dat_cop_southern$estimate, climate_dat_cop_southern$trend)
-  bioup_NCC_southern_full <-rbind(bioup_NCC_southern_full,scaled.anom)
-}
-bioup_NCC_southern_spring_full<-mutate(bioup_NCC_southern_full, period=4,
-                           Survey="S. Copepod",region="NCC")
+#bioup_NCC_southern_full <-NULL
+#columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
+#for(i in 1:length(columns)){
+#  bayeslinmod(climate_dat_cop_southern, columns[i],  climate_dat_cop_southern$estimate, climate_dat_cop_southern$trend)
+#  bioup_NCC_southern_full <-rbind(bioup_NCC_southern_full,scaled.anom)
+#}
+#bioup_NCC_southern_spring_full<-mutate(bioup_NCC_southern_full, period=4,
+#                           Survey="S. Copepod",region="NCC")
  
 bioup_SCC <-NULL
-columns<-c(which(colnames(climate_dat_CALCOFI) == "stand_bakun_seasonally"))
 for(i in 1:length(columns)){
   bayeslinmod(climate_dat_CALCOFI, columns[i],  climate_dat_CALCOFI$estimate, climate_dat_CALCOFI$period)
    bioup_SCC <-rbind( bioup_SCC,scaled.anom)
 }
 bioup_SCC_spring<-mutate(bioup_SCC,
-                           Survey="CALCOFI",region="SCC")
+                           Survey="CALCOFI",region="SCC",
+                         Index=ifelse(Index=="stand_bakun_seasonally", "Upwelling", 
+                                      ifelse(Index=="stand_sti", "STI",
+                                             ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
 
-bioup_SCC <-NULL
-columns<-c(which(colnames(climate_dat_CALCOFI) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_CALCOFI, columns[i],  climate_dat_CALCOFI$estimate, climate_dat_CALCOFI$trend)
-   bioup_SCC <-rbind( bioup_SCC,scaled.anom)
-}
-bioup_SCC_spring_full<-mutate(bioup_SCC,
-                           Survey="CALCOFI",region="SCC", period=4)
+#bioup_SCC <-NULL
+#columns<-c(which(colnames(climate_dat_CALCOFI) == "stand_bakun_seasonally"))
+#for(i in 1:length(columns)){
+#  bayeslinmod(climate_dat_CALCOFI, columns[i],  climate_dat_CALCOFI$estimate, climate_dat_CALCOFI$trend)
+#   bioup_SCC <-rbind( bioup_SCC,scaled.anom)
+#}
+#bioup_SCC_spring_full<-mutate(bioup_SCC,Survey="CALCOFI",region="SCC", period=4)
 
 bioup_CCC <-NULL
-columns<-c(which(colnames(climate_dat_RREAS) == "stand_bakun_seasonally"))
 for(i in 1:length(columns)){
   bayeslinmod(climate_dat_RREAS, columns[i],  climate_dat_RREAS$estimate, climate_dat_RREAS$period)
   bioup_CCC <-rbind(bioup_CCC,scaled.anom)
 }
 
-bioup_CCC_spring<-mutate(bioup_CCC, period=ifelse(period==1,2,3),Survey="RREAS",region="CCC")
+bioup_CCC_spring<-mutate(bioup_CCC, period=ifelse(period==1,2,3),Survey="RREAS",region="CCC",
+                         Index=ifelse(Index=="stand_bakun_seasonally", "Upwelling", 
+                                      ifelse(Index=="stand_sti", "STI",
+                                             ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
 
-bioup_CCC_full <-NULL
-columns<-c(which(colnames(climate_dat_RREAS) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_RREAS, columns[i],  climate_dat_RREAS$estimate, climate_dat_RREAS$trend)
-  bioup_CCC_full <-rbind(bioup_CCC_full,scaled.anom)
-}
+#bioup_CCC_full <-NULL
+#columns<-c(which(colnames(climate_dat_RREAS) == "stand_bakun_seasonally"))
+#for(i in 1:length(columns)){
+#  bayeslinmod(climate_dat_RREAS, columns[i],  climate_dat_RREAS$estimate, climate_dat_RREAS$trend)
+#  bioup_CCC_full <-rbind(bioup_CCC_full,scaled.anom)
+#}
 
-bioup_CCC_spring_full<-mutate(bioup_CCC_full, period=4,Survey="RREAS",region="CCC")
+#bioup_CCC_spring_full<-mutate(bioup_CCC_full, period=4,Survey="RREAS",region="CCC")
 
 
-bioup_spring<- bind_rows(bioup_CCC_spring,bioup_SCC_spring,bioup_NCC_southern_spring,bioup_NCC_northern_spring,
-                         bioup_CCC_spring_full,bioup_SCC_spring_full,
-                         bioup_NCC_southern_spring_full,bioup_NCC_northern_spring_full)
+bioup_spring<- bind_rows(bioup_CCC_spring,bioup_SCC_spring,
+                         bioup_NCC_southern_spring,
+                         bioup_NCC_northern_spring)%>%
+  mutate(season="Spring", lag=0)
 
 
  ggplot(bioup_spring, aes(x = beta, fill = as.factor(period), group=as.factor(period))) +
     theme_bw() +
-    facet_wrap(.~Survey, ncol = 4, scales='free') +
+    facet_wrap(Index~Survey, ncol = 4, scales='free') +
     geom_density(alpha = 0.7) +
     scale_fill_manual(values = c(col[1],col[2], col[3], 'grey')) +
     #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
@@ -1140,147 +1274,20 @@ bioup_spring<- bind_rows(bioup_CCC_spring,bioup_SCC_spring,bioup_NCC_southern_sp
     labs(x = "Slope",
          y = "Posterior density")
 
- ###### Winter #####
-
-
-upwelling_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))%>%
-  mutate(region=ifelse(region=='Southern CC','SCC',
-                ifelse(region=="Northern CC", 'NCC','CCC')))%>%
-  dplyr::select(Year_lag,  period,region, season, stand_bakun_seasonally)
-
-dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%
-  mutate(period=ifelse(Year_lag<1989,1,ifelse(Year_lag>2012,3,2)))%>%
-    mutate(region=ifelse(trend=='CALCOFI','SCC',
-                ifelse(trend=="RREAS", 'CCC',0)))%>%
-  dplyr::select(Year_lag, region, trend,  estimate)%>%
-  filter(region!=0)%>%
-  distinct()%>%
-  merge(upwelling_dat%>%filter(season=="Winter"))%>%
-  distinct()
-climate_dat_RREAS<-filter(dfa, trend=="RREAS", period==2|period==3)
-climate_dat_CALCOFI<-filter(dfa, trend=="CALCOFI")
-
-
-bioup_NCC_northern <-NULL
-columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_northern, columns[i],  climate_dat_cop_northern$estimate, climate_dat_cop_northern$period)
-  bioup_NCC_northern <-rbind(bioup_NCC_northern,scaled.anom)
-}
-bioup_NCC_northern_winter<-mutate(bioup_NCC_northern, period=ifelse(period==1,2,3),
-                                  Survey="N. Copepod",region="NCC")
-
-bioup_NCC_northern_full <-NULL
-columns<-c(which(colnames(climate_dat_cop_northern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_northern, columns[i],  climate_dat_cop_northern$estimate, climate_dat_cop_northern$trend)
-  bioup_NCC_northern_full <-rbind(bioup_NCC_northern_full,scaled.anom)
-}
-bioup_NCC_northern_winter_full<-mutate(bioup_NCC_northern_full, period=4,
-                                       Survey="N. Copepod",region="NCC")
-
  
-bioup_NCC_southern <-NULL
-columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_southern, columns[i],  climate_dat_cop_southern$estimate, climate_dat_cop_southern$period)
-  bioup_NCC_southern <-rbind(bioup_NCC_southern,scaled.anom)
-}
-bioup_NCC_southern_winter<-mutate(bioup_NCC_southern, period=ifelse(period==1,2,3),
-                           Survey="S. Copepod",region="NCC")
-
-bioup_NCC_southern_full <-NULL
-columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_cop_southern, columns[i],  climate_dat_cop_southern$estimate, climate_dat_cop_southern$trend)
-  bioup_NCC_southern_full <-rbind(bioup_NCC_southern_full,scaled.anom)
-}
-bioup_NCC_southern_winter_full<-mutate(bioup_NCC_southern_full, period=4,
-                           Survey="S. Copepod",region="NCC")
- 
-bioup_SCC <-NULL
-columns<-c(which(colnames(climate_dat_CALCOFI) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_CALCOFI, columns[i],  climate_dat_CALCOFI$estimate, climate_dat_CALCOFI$period)
-   bioup_SCC <-rbind( bioup_SCC,scaled.anom)
-}
-bioup_SCC_winter<-mutate(bioup_SCC,
-                           Survey="CALCOFI",region="SCC")
-
-bioup_SCC <-NULL
-columns<-c(which(colnames(climate_dat_CALCOFI) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_CALCOFI, columns[i],  climate_dat_CALCOFI$estimate, climate_dat_CALCOFI$trend)
-   bioup_SCC <-rbind( bioup_SCC,scaled.anom)
-}
-bioup_SCC_winter_full<-mutate(bioup_SCC,
-                           Survey="CALCOFI",region="SCC", period=4)
-
-bioup_CCC <-NULL
-columns<-c(which(colnames(climate_dat_RREAS) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_RREAS, columns[i],  climate_dat_RREAS$estimate, climate_dat_RREAS$period)
-  bioup_CCC <-rbind(bioup_CCC,scaled.anom)
-}
-
-bioup_CCC_winter<-mutate(bioup_CCC, period=ifelse(period==1,2,3),Survey="RREAS",region="CCC")
-
-bioup_CCC_full <-NULL
-columns<-c(which(colnames(climate_dat_RREAS) == "stand_bakun_seasonally"))
-for(i in 1:length(columns)){
-  bayeslinmod(climate_dat_RREAS, columns[i],  climate_dat_RREAS$estimate, climate_dat_RREAS$trend)
-  bioup_CCC_full <-rbind(bioup_CCC_full,scaled.anom)
-}
-
-bioup_CCC_winter_full<-mutate(bioup_CCC_full, period=4,Survey="RREAS",region="CCC")
-
-
-bioup_winter<- bind_rows(bioup_CCC_winter,bioup_SCC_winter,bioup_NCC_southern_winter,bioup_NCC_northern_winter,
-                         bioup_CCC_winter_full,bioup_SCC_winter_full,
-                         bioup_NCC_southern_winter_full,bioup_NCC_northern_winter_full)
-
-
- ggplot(bioup_winter, aes(x = beta, fill = as.factor(period), group=as.factor(period))) +
-    theme_bw() +
-    facet_wrap(.~Survey, ncol = 4, scales='free') +
-    geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c(col[1],col[2], col[3], 'grey')) +
-    #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
-    geom_vline(xintercept = 0, lty = 2) +
-    labs(x = "Slope",
-         y = "Posterior density")
- 
- bioup<- bind_rows(bioup_winter%>%mutate(Season='Winter'),
-                   bioup_spring%>%mutate(Season='Spring'))%>%
-   mutate(lag=0,Index="Upwelling")%>%
-   rename(survey=Survey)%>%
-   dplyr::select(alpha,beta,period,Index,yfirst,ylast, survey,region,Season,lag)
-
-
- ggplot(bioup, aes(x = beta, fill = as.factor(period), group=as.factor(period))) +
-    theme_bw() +
-    facet_wrap(Season~survey, ncol = 4, scales='free') +
-    geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c(col[1],col[2], col[3], 'grey')) +
-    #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
-    geom_vline(xintercept = 0, lty = 2) +
-    labs(x = "Slope",
-         y = "Posterior density")
- 
- ggplot(bioup%>%dplyr::filter(period!=4), aes(x = beta, fill = as.factor(period), group=as.factor(period))) +
-    theme_bw() +
-    facet_wrap(Season~survey, ncol = 4, scales='free') +
-    geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c(col[1],col[2], col[3], 'grey')) +
-    #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
-    geom_vline(xintercept = 0, lty = 2) +
-    labs(x = "Slope",
-         y = "Posterior density")
 #### Full Data Results ####
 upwelling
+ STI<-STI%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                     region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ LUSI<-LUSI%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                      region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ TUMI<-TUMI%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                      region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ 
 Full_Results <- bind_rows(CALCOFI_Woffset,CALCOFI_W,CALCOFIoffset,CALCOFI,
           RREAS_Woffset,RREAS_W,RREASoffset,RREAS,
-          upwelling,upwellingW,
+          upwelling,
+          upwelling,TUMI,STI,LUSI,
           northernW%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))),
           northern%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))), 
           southernW%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))),
@@ -1302,5 +1309,16 @@ na.omit(overlap.northern),na.omit(overlap.northernW),
 na.omit(overlap.southern),na.omit(overlap.southernW),
 na.omit(overlap.up), na.omit(overlap.upW))
 
-Violin_Data<- bind_rows(Full_Results,bioup)
+saveRDS(Full_Results, file = here('data/Full_Results.rds'))
+
+Violin_Data<-bind_rows(Full_Results,bioup_spring%>%rename(survey=Survey))%>%
+mutate(survey=ifelse(survey=="N. Copepod (NCC)","N. Copepod",
+                     ifelse(survey=="S. Copepod (NCC)","S. Copepod",
+                            ifelse(survey=="Southern Copepod (NCC)","S. Copepod",survey))))
 saveRDS(Violin_Data, file = here('data/Violin_Data.rds'))
+
+climate_dat_cop%>%filter(region=="NCC")%>%
+  dplyr::select(seasonal_ONI, Year_lag)%>%
+  distinct()
+  
+

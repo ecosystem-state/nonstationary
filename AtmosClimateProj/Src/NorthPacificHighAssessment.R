@@ -125,14 +125,33 @@ a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,gro
   geom_errorbar(data=means,aes(ymin = mean.y-sd.y, ymax=  mean.y+sd.y), width=0.5) +
   geom_errorbar(data=means,aes(xmin = abs(mean.x-360)-sd.x, xmax=  abs(mean.x-360)+sd.x), width=0.5) +
   scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  geom_hline(yintercept=mean(spring.schroeder$mean.y),lty=2, col='grey')+
+  geom_vline(xintercept=mean(spring.schroeder$mean.x), lty=2, col='grey')+
   scale_x_reverse(lim=c(147,135))+
   ylab('Latitude (ºN)')+
   theme_bw() +
   xlab('Longitude (ºW)')
 a.plot
 
+k.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,group=era.lab,col=era.lab))+
+  geom_point(alpha=0.4)+
+  ggtitle("Center of North Pacific High") +
+  geom_point(data=means)+
+  theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
+        axis.title.y = element_text(size=7)) +
+  geom_errorbar(data=means,aes(ymin = mean.y-sd.y, ymax=  mean.y+sd.y), width=0.5) +
+  geom_errorbar(data=means,aes(xmin = abs(mean.x-360)-sd.x, xmax=  abs(mean.x-360)+sd.x), width=0.5) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  geom_hline(yintercept=mean(spring.schroeder$mean.y),lty=2, col='grey')+
+  geom_vline(xintercept=mean(spring.schroeder$mean.x), lty=2, col='grey')+
+  scale_x_reverse(lim=c(147,135))+
+  ylab('Latitude (ºN)')+
+  theme_bw() +
+  xlab('Longitude (ºW)')
+k.plot
+
 j.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
-  geom_text(alpha=0.4)+
+  geom_point(alpha=0.4)+
   ggtitle("North Pacific High\n Areal Extent and Intensity") +
   geom_point(data=means)+
   theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
@@ -143,6 +162,8 @@ j.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,gro
   #scale_x_reverse(lim=c(147,135))+
   ylab('North Pacific High \n Intensity (hPa)')+
   theme_bw()+
+  geom_hline(yintercept=mean(spring.schroeder$mean.max),lty=2, col='grey')+
+  geom_vline(xintercept=mean(spring.schroeder$mean.area), lty=2, col='grey')+
   xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
 j.plot
 
