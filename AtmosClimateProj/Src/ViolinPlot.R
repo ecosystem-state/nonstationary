@@ -1,5 +1,5 @@
 
-Violin_Data <-readRDS(here('data/Violin_Data.rds'))
+Violin_Data <-readRDS('data/Violin_Data.rds')
 
 Violin_indices <- filter(Violin_Data, survey!="Upwelling",survey!="TUMI",
                          survey!="LUSI",survey!="STI") 
@@ -109,9 +109,9 @@ violin.up <-ggplot(ratio.up%>%filter(survey=="Upwelling"), aes(x=region, y=beta_
   theme(legend.position="bottom")
 violin.up
 
-#### Violin STI ####
+#### Violin Phenology ####
 
-violin.sti <-ggplot(ratio.up%>%filter(survey=="STI"), aes(x=region, y=beta_diff, fill=region)) +
+violin.sti <-ggplot(ratio.up%>%filter(survey=="STI"&Season=="Spring"), aes(x=region, y=beta_diff, fill=region)) +
   theme_bw() +
   facet_wrap(~Difference)+
   scale_fill_manual(values=col4[3:1], name="Region")+
@@ -128,7 +128,7 @@ violin.sti <-ggplot(ratio.up%>%filter(survey=="STI"), aes(x=region, y=beta_diff,
   theme(legend.position="bottom")
 violin.sti
 
-violin.tumi <-ggplot(ratio.up%>%filter(survey=="TUMI"), aes(x=region, y=beta_diff, fill=region)) +
+violin.tumi <-ggplot(ratio.up%>%filter(survey=="TUMI"&Season=="Spring"), aes(x=region, y=beta_diff, fill=region)) +
   theme_bw() +
   facet_wrap(~Difference)+
   scale_fill_manual(values=col4[3:1], name="Region")+
@@ -146,7 +146,7 @@ violin.tumi <-ggplot(ratio.up%>%filter(survey=="TUMI"), aes(x=region, y=beta_dif
 violin.tumi
 
 
-violin.lusi <-ggplot(ratio.up%>%filter(survey=="LUSI"), aes(x=region, y=beta_diff, fill=region)) +
+violin.lusi <-ggplot(ratio.up%>%filter(survey=="LUSI"&Season=="Spring"), aes(x=region, y=beta_diff, fill=region)) +
   theme_bw() +
   facet_wrap(~Difference)+
   scale_fill_manual(values=col4[3:1], name="Region")+
@@ -163,6 +163,64 @@ violin.lusi <-ggplot(ratio.up%>%filter(survey=="LUSI"), aes(x=region, y=beta_dif
   theme(legend.position="bottom")
 violin.lusi
 
+
+#### Violin Winter Phenology ####
+ratio.upw<-ratio_upwelling%>%filter(region!="GoA", season=="Winter"|Season=="Winter", lag==0)%>%
+  mutate(region=ifelse(region=="Northern CC","NCC",
+                       ifelse(region=="Southern CC", "SCC", "CCC")))
+ratio.upw$region <- factor(ratio.upw$region,
+                          levels = c("SCC","CCC","NCC"))
+violin.stiw <-ggplot(ratio.upw%>%filter(survey=="STI"&Season=="Winter"), aes(x=region, y=beta_diff, fill=region)) +
+  theme_bw() +
+  facet_wrap(~Difference)+
+  scale_fill_manual(values=col4[3:1], name="Region")+
+  geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
+  # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
+  stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
+  stat_summary(fun="q.50", colour="black", geom="line", lwd=0.6)+
+  coord_flip() +
+  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  ggh4x::facet_grid2(Index~Difference2) +
+  ylab("STI Posterior Difference") +
+  xlab("") +
+  geom_hline(aes(yintercept=0), size=0.3) +
+  theme(legend.position="bottom")
+violin.stiw
+
+violin.tumiw <-ggplot(ratio.upw%>%filter(survey=="TUMI"&Season=="Winter"), aes(x=region, y=beta_diff, fill=region)) +
+  theme_bw() +
+  facet_wrap(~Difference)+
+  scale_fill_manual(values=col4[3:1], name="Region")+
+  geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
+  # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
+  stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
+  stat_summary(fun="q.50", colour="black", geom="line", lwd=0.6)+
+  coord_flip() +
+  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  ggh4x::facet_grid2(Index~Difference2) +
+  ylab("TUMI Posterior Difference") +
+  xlab("") +
+  geom_hline(aes(yintercept=0), size=0.3) +
+  theme(legend.position="bottom")
+violin.tumiw
+
+
+violin.lusiw <-ggplot(ratio.upw%>%filter(survey=="LUSI"&Season=="Winter"), aes(x=region, y=beta_diff, fill=region)) +
+  theme_bw() +
+  facet_wrap(~Difference)+
+  scale_fill_manual(values=col4[3:1], name="Region")+
+  geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
+  # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
+  stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
+  stat_summary(fun="q.50", colour="black", geom="line", lwd=0.6)+
+  coord_flip() +
+  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  ggh4x::facet_grid2(Index~Difference2) +
+  ylab("LUSI Posterior Difference") +
+  xlab("") +
+  geom_hline(aes(yintercept=0), size=0.3) +
+  theme(legend.position="bottom")
+violin.lusiw
 #### Violin Biological 2 ####
 unique(ratio.bio$Index)
 ratio.bio<-ratio_biological%>%filter(Season=="Spring", lag==0)%>%

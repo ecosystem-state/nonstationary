@@ -16,7 +16,7 @@ library(mapdata)    #some additional hires data
 library(maptools)   #useful tools such as reading shapefiles
 library(mapproj)
 library(PBSmapping)
-library(overlapping)
+library(bayestestR)
 set.seed(1234)
 
 

@@ -16,7 +16,7 @@ library(mapdata)    #some additional hires data
 library(maptools)   #useful tools such as reading shapefiles
 library(mapproj)
 library(PBSmapping)
-library(overlapping)
+library(bayestestR)
 set.seed(1234)
 
 ##### Writing Bayes DFA model function ####
@@ -213,6 +213,11 @@ ggplot(CALCOFI, aes(x = beta,fill = as.factor(period), group=as.factor(period)))
 
 index.names <- unique(CALCOFI$Index)
 period.names <- unique(CALCOFI$period)
+ov1 <- data.frame(ov=
+                    
+overlap(temp%>%filter(period==1)%>%dplyr::select(beta),
+        temp%>%filter(period==2)%>%dplyr::select(beta)))
+
 overlap.CALCOFI <- NA
   for(i in 1:4){
     temp <- CALCOFI%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
@@ -401,7 +406,7 @@ CALCOFI_Woffset<- bind_rows(CALCOFI_Woffset,CALCOFI_Woffset_full)%>%
 index.names <- unique(CALCOFI_Woffset$Index)
 period.names <- unique(CALCOFI_Woffset$period)
 overlap.CALCOFI_Woffset <- NA
-  for(i in 1:4){
+ for(i in 1:4){
     temp <- CALCOFI_Woffset%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
     ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
     ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
@@ -470,7 +475,7 @@ RREAS<- bind_rows(RREAS,RREAS_full)%>%
 index.names <- unique(RREAS$Index)
 period.names <- unique(RREAS$period)
 overlap.RREAS <- NA
- for(i in 1:4){
+for(i in 1:4){
     temp <- RREAS%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
     ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
     ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
@@ -596,7 +601,7 @@ RREAS_W<- bind_rows(RREAS_W,RREAS_W_full)%>%
 index.names <- unique(RREAS_W$Index)
 period.names <- unique(RREAS_W$period)
 overlap.RREAS_W <- NA
-  for(i in 1:4){
+ for(i in 1:4){
     temp <- RREAS_W%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
     ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
     ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
@@ -760,7 +765,7 @@ period.names <- unique(southern$period)
 southern<- bind_rows(southern,southern_full)%>%
   mutate(region="NCC",Season="Spring", lag = 0)
 overlap.southern <- NA
-i<-1
+
 for(i in 1:4){
   temp <- southern%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
   ov3 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
@@ -858,7 +863,6 @@ period.names <- unique(southernW$period)
 southernW<- bind_rows(southernW,southernW_full)%>%
   mutate(region="NCC",Season="Winter", lag = 0)
 overlap.southernW <- NA
-i<-1
 for(i in 1:4){
   temp <- southernW%>%filter(Index==index.names[i])%>%dplyr::select(beta, period)
   ov3 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
@@ -1134,6 +1138,115 @@ ggplot(TUMI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region)
 
 
 
+##### WINTER Phenology Model Runs #####
+climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
+season <- "Winter"
+eras <- data.frame(era.region2=seq(1,9), era.region=seq(4,12))
+data<- climate_dat%>%filter(season=="Winter"&region!='GoA'&Year_lag<2023)%>%
+  #  filter(Year_lag!=2022&Year_lag!=2015)%>%
+  distinct()%>%
+  left_join(eras)
+
+data.phe.lmW<-data%>%filter(season=="Winter")%>%
+  dplyr::select(Year_lag, season, period,region,stand_tumi,stand_lusi,stand_sti,stand_bakun_seasonally,
+                seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
+  rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
+  distinct()%>%
+  pivot_longer(!c(Year_lag, season, period,region,stand_tumi,stand_lusi,stand_sti,stand_bakun_seasonally), 
+               names_to = "Index_Name", values_to = "Index_Value")%>%
+  pivot_longer(!c(Year_lag, season,period,region, Index_Value, Index_Name), 
+               names_to = "Up_Name", values_to = "Up_Value")%>%
+  distinct()
+ggplot(data = data.phe.lm%>%filter(region=="Northern CC"), aes(y = Up_Value, x =Index_Value,col=as.factor(period))) +
+  facet_grid(Index_Name~Up_Name, scales='free') +
+  geom_point(aes(col=as.factor(period))) +
+  # geom_text(aes(label=Year_lag,col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
+  geom_smooth(method = "lm", se = FALSE, col='grey') +
+  scale_y_continuous(name = "Index of Abundance") +
+  scale_color_manual(values =  col[1:3], name="Period",labels=c('1967 - 1988', '1989 - 2012','2013 - 2022'))+
+  theme_bw()+
+  xlab("Climate Index Value")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle("Winter")
+###### STI #######
+STIW<-NULL
+columns<-c(which(colnames(data) == "seasonal_PDO"), which(colnames(data) == "seasonal_NPGO"),
+           which(colnames(data) == "seasonal_NPH"),which(colnames(data) == "seasonal_ONI"))
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_sti, data$era.region2)
+  STIW <-rbind(STIW,scaled.anom)
+}
+STIW<-STIW%>%mutate(survey="STI",era.region2=period,
+                  Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                    ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Winter', lag=0, era.region=era.region2)
+
+
+ggplot(STIW, aes(x = beta, fill = as.factor(period))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 3, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+postplot(STIW, STIW$beta)
+postplot(STIW,STIW$alpha)
+
+
+###### LUSI #######
+LUSIW<-NULL
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_lusi, data$era.region2)
+  LUSIW <-rbind(LUSIW,scaled.anom)
+}
+LUSIW<-LUSIW%>%mutate(survey="LUSI",era.region2=period,
+                    Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                      ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Winter', lag=0, era.region=era.region2)
+
+
+ggplot(LUSIW, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
+
+
+###### TUMI #######
+TUMIW<-NULL
+for(i in 1:length(columns)){
+  bayeslinmod(data, columns[i],  data$stand_tumi, data$era.region2)
+  TUMIW <-rbind(TUMIW,scaled.anom)
+}
+TUMIW<-TUMIW%>%mutate(survey="TUMI",era.region2=period,
+                    Index=ifelse(Index=="seasonal_PDO", "PDO", ifelse(Index=="seasonal_NPGO", "NPGO",
+                                                                      ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
+  dplyr::select(!period)%>%
+  left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
+  mutate(Season='Winter', lag=0, era.region=era.region2)
+
+
+ggplot(TUMIW, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
+  theme_bw() +
+  facet_wrap(region~Index, ncol = 4, scales='free') +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c(col[1],col[2], col[3])) +
+  #theme(legend.title = element_blank(), legend.position = 'top', legend.key.size = unit(3, 'mm')) +
+  geom_vline(xintercept = 0, lty = 2) +
+  labs(x = "Slope",
+       y = "Posterior density")
 
 #####BIOLOGICAL VERSUS UPWELLING ####
 ###### Spring #####
@@ -1284,10 +1397,17 @@ upwelling
  TUMI<-TUMI%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
                       region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
  
+ STIW<-STIW%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                          region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ LUSIW<-LUSIW%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                            region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ TUMIW<-TUMIW%>%dplyr::select(alpha,beta,Index,yfirst,ylast,survey,
+                            region,period,Season,lag)%>%mutate(period=as.numeric(as.factor(period)))
+ 
 Full_Results <- bind_rows(CALCOFI_Woffset,CALCOFI_W,CALCOFIoffset,CALCOFI,
           RREAS_Woffset,RREAS_W,RREASoffset,RREAS,
           upwelling,
-          upwelling,TUMI,STI,LUSI,
+          upwelling,TUMI,STI,LUSI,TUMIW,STIW,LUSIW,
           northernW%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))),
           northern%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))), 
           southernW%>%mutate(period=ifelse(period==1,2,ifelse(period==2,3,4))),
@@ -1321,4 +1441,4 @@ climate_dat_cop%>%filter(region=="NCC")%>%
   dplyr::select(seasonal_ONI, Year_lag)%>%
   distinct()
   
-
+Violin_Data%>%filter(Season=="Winter"&survey=="TUMI")
