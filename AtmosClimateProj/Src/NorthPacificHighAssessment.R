@@ -117,8 +117,9 @@ theme_set(theme_classic())
 #plotting location
 col<-pnw_palette("Sunset2",3,type="discrete")
 a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,group=era.lab,col=era.lab))+
-  geom_text(col='grey')+
-  ggtitle("Center of North Pacific High") +
+  geom_point(alpha=0.4)+
+  #geom_text(col='grey')+
+  #ggtitle("Center of North Pacific High") +
   geom_point(data=means)+
   theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
         axis.title.y = element_text(size=7)) +
@@ -130,7 +131,8 @@ a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,gro
   scale_x_reverse(lim=c(147,135))+
   ylab('Latitude (ºN)')+
   theme_bw() +
-  xlab('Longitude (ºW)')
+  xlab('Longitude (ºW)')+
+  theme(legend.position = "none")
 a.plot
 
 k.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,group=era.lab,col=era.lab))+
@@ -152,7 +154,7 @@ k.plot
 
 j.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
   geom_point(alpha=0.4)+
-  ggtitle("North Pacific High\n Areal Extent and Intensity") +
+ # ggtitle("North Pacific High\n Areal Extent and Intensity") +
   geom_point(data=means)+
   theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
         axis.title.y = element_text(size=7)) +
@@ -279,7 +281,7 @@ c.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   geom_line(aes(year, mean), color=cb[6], size=0.4)  +  theme_bw() +
   ylab("Standard deviation \n (hPa)") +
   xlab("")+
-  ggtitle("North Pacific High Intensity Variability (Spring)") +
+ # ggtitle("North Pacific High Intensity Variability (Spring)") +
   geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
   geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
   xlim(1967,2020)
@@ -386,6 +388,9 @@ f.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   xlim(1967,2020)
 f.plot
 
+z.plot<-ggplot()
+  
+  z.plot
 ##### Jumbo Plot ####
 
 #### Map Data #####
@@ -396,12 +401,14 @@ col3<-pnw_palette("Sunset2",8,type="continuous")
 col<-pnw_palette("Sunset2",3,type="discrete")
 climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
 climate_dat_cop <-readRDS(here('data/physical/climate_dat_cop.rds'))
-bakunsites <- read.csv(here('data/physical/Bakun/MapLocations.csv'))%>%
+bakunsites <- read.csv(here('data/physical/Bakun/MapLocations2.csv'))%>%
   mutate(longitude=longitude)
 sites <- st_as_sf(data.frame(bakunsites[,1:2]), coords = c("longitude","latitude"), crs = 4326, 
                   agr = "constant")
 
 #### Making the Map #####
+world <- st_as_sf(map('world', plot=F, fill=T)) #base layer for land masses
+
 map<-ggplot() +
   geom_polygon(aes(x=c(-105, -113, -127,-105,-105),
                    y=c(22.1, 22.1,34.4486,34.4486,20)),
@@ -416,11 +423,11 @@ map<-ggplot() +
   annotate("rect", xmin= -121.5, xmax = -109, ymin = 42, ymax = 48.8, 
            fill = 'white', col='black',size = 0.8, lwd=0.2) +
   geom_sf(fill='grey95') +
-  geom_sf(data = sites, size = c(rep(2,68+35+16), rep(3,2)), 
-          shape = c(rep(24,68), rep(21,35),rep(23,16),rep(22,2)), 
-          col = c(rep('black',68+35+18)), 
-          fill = c(rep(col3[3],68), rep(col3[7],35),rep(col3[5],16),rep(col3[8],2))) +
-  coord_sf(xlim = c(-132, -108), ylim = c(22, 50), expand = FALSE)+
+  geom_sf(data = sites, size = c(rep(2,68+35+12), rep(3,2)), 
+          shape = c(rep(24,68), rep(21,35),rep(23,12),rep(22,2)), 
+          col = c(rep('black',68+35+14)), 
+          fill = c(rep(col3[3],68), rep(col3[7],35),rep(col3[5],12),rep(col3[8],2))) +
+  coord_sf(xlim = c(-132, -108), ylim = c(26, 50), expand = FALSE)+
   ylab(" ")+
   xlab(" ")+
   annotation_scale()+
@@ -430,7 +437,7 @@ map<-ggplot() +
            label = str_wrap(c("Central", "Southern","Northern"), width = 20),
            fontface = "italic", color = "grey22", size = 3.75, angle=c('290', '311','270')) +
   annotate(geom = "text", x = c(-114,-114,-114,-114,-114), y = c(48,46.5,45, 44,43), 
-           label = str_wrap(c("Bakun Index","CC Regions", "Newport Line","CalCOFI", "RREAS"), width = 22),
+           label = str_wrap(c("Upwelling Data","CC Regions", "Newport Line","CalCOFI", "RREAS"), width = 22),
            color = "grey22", size =3.5) +
   annotate(geom = "text", x = c(-120.5,-117), y = c(41,35), 
            label = str_wrap(c("Cape Mendocino","Point Conception"), width = 20),
@@ -444,10 +451,50 @@ map<-ggplot() +
         panel.border = element_rect(fill = NA),panel.grid.major = element_line(colour = "transparent"))
 
 map 
+
+#### SLP Plots ####
+
+
+ddd <-readRDS('data/physical/correlation_analysis_indices2.rds')%>%
+  mutate(index = case_when(grepl("PDO", analysis) ~ "PDO",
+                           grepl("NPGO", analysis) ~ "NPGO",
+                           grepl("ONI", analysis) ~ "ONI",
+                           grepl("NPH", analysis) ~ "NPH"))%>%
+  mutate(era = case_when(grepl("1967 - 1988", analysis) ~ "Era 1",
+                         grepl("1989 - 2012", analysis) ~ "Era 2",
+                         grepl("2013 - 2023", analysis) ~ "Era 3"))%>%
+  mutate(period = case_when(grepl("1967 - 1988", analysis) ~ "1967 - 1988",
+                            grepl("1989 - 2012", analysis) ~ "1989 - 2012",
+                            grepl("2013 - 2023", analysis) ~ "2013 - 2023"))
+
+world2 <- st_as_sf(map('world2', plot=F, fill=T)) #base layer for land masses
+#plot code
+SLP.plot <-ggplot() + 
+  geom_raster(data=na.omit(ddd%>%filter(var=="SLP")), aes(x=longitude,y=latitude,fill = coefficient)) + 
+  facet_grid(index~period) + 
+  geom_sf(data=world2, col="black", fill="darkgoldenrod3") +
+  coord_sf(xlim=c(220,250), ylim=c(20,50)) +
+  scale_fill_gradient2(low = "blue", high = "red") + 
+  ggtitle("SLP")+
+  scale_x_continuous(breaks = c(225, 245))+
+  scale_y_continuous(breaks = c(25, 35,45))+
+  #geom_contour(data=X_cc, aes(x=longitude,y=latitude,z = coefficient), col="lightgrey", lwd=0.5)+
+  theme(strip.background=element_rect(colour="black",
+                                      fill="white"),panel.background = element_rect(fill = "white"),plot.title = element_text(hjust = 0.5), panel.border = element_rect(fill = NA))
+SLP.plot
 #### JUMBO Plot #####
 pdf("Output/Fig JumboV2.pdf", 11,8) 
 ggarrange(ggarrange(map,ggarrange(a.plot,j.plot, nrow = 2, labels = c("B", "C")),
                     ncol=2,labels = c("A", "")), c.plot,labels = c("", "D"),nrow=2,heights=c(2,0.75))
 dev.off()
 
+pdf("Output/MapSpace.pdf", 8,5) 
+ggarrange(map, z.plot,  ncol=2,labels = c("A", "B"))
+dev.off()
+
+pdf("Output/Fig SLP and NPH.pdf", 11,6.5) 
+ggarrange(ggarrange(a.plot,j.plot,c.plot, nrow = 3, labels = c("A", "B", "C")),
+          SLP.plot,
+                    ncol=2,labels = c("","D"))
+dev.off()
 

@@ -163,6 +163,25 @@ violin.lusi <-ggplot(ratio.up%>%filter(survey=="LUSI"&Season=="Spring"), aes(x=r
   theme(legend.position="bottom")
 violin.lusi
 
+colnames(ratio.up)
+ratio.up$Difference2
+violin.phe <-ggplot(ratio.up%>%filter(survey!="Upwelling"&Season=="Spring"&Difference2=="Era 3 - Era 2"), aes(x=region, y=beta_diff, fill=region)) +
+  theme_bw() +
+  facet_wrap(~survey)+
+  scale_fill_manual(values=col4[3:1], name="Region")+
+  geom_violin(alpha = 0.75, lwd=0.1, scale='width',trim=TRUE) +
+  # stat_summary(fun="q.95", colour="black", geom="line", lwd=0.75) +
+  stat_summary(fun="q.90", colour="black", geom="line", lwd=0.3) +
+  stat_summary(fun="q.50", colour="black", geom="line", lwd=0.6)+
+  coord_flip() +
+  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  ggh4x::facet_grid2(Index~survey) +
+  ylab("Phyical Conditions Posterior Difference") +
+  xlab("") +
+  theme(legend.position="none")+
+  geom_hline(aes(yintercept=0), size=0.3) 
+violin.phe
+
 
 #### Violin Winter Phenology ####
 ratio.upw<-ratio_upwelling%>%filter(region!="GoA", season=="Winter"|Season=="Winter", lag==0)%>%
@@ -250,7 +269,7 @@ violin.bio <-ggplot(ratio.bio%>%filter(Difference=="2013:2023 - 1989:2012"),
   coord_flip() +
   stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
   ggh4x::facet_grid2(Index~Difference2) +
-  ylab("Biological Posterior Difference") +
+  ylab("Biological Posterior \n Difference") +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) +
   theme(legend.position="none")
@@ -266,7 +285,7 @@ ratio_index$region <- factor(ratio_index$region,
 ratio_index$survey <- factor(ratio_index$survey,
                            levels = c("CALCOFI","RREAS","N. Copepod","S. Copepod", 
                                       "Upwelling","STI","TUMI","LUSI"))
-violin.bio2 <-ggplot(ratio_index%>%filter(Difference=="2013:2023 - 1989:2012"), 
+violin.bio2 <-ggplot(ratio_index%>%filter(Difference=="2013:2023 - 1989:2012" & Index!="Upwelling"), 
                     aes(x=survey, y=beta_diff, fill=region)) +
   theme_bw() +
   scale_fill_manual(values=c(col4[3:1],col4[1]), name="Region")+
@@ -280,13 +299,20 @@ violin.bio2 <-ggplot(ratio_index%>%filter(Difference=="2013:2023 - 1989:2012"),
   ylab("Biological Posterior Difference") +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) +
-  theme(legend.position="none")
+  theme(legend.position="bottom",axis.text.y=element_blank())
 violin.bio2
 
 
-pdf("Output/ViolinV2.pdf", 7,5) 
-ggarrange(violin.up,violin.bio,labels = c("A", "B"),  
-          font.label = list(size = 12, face="plain"), ncol=2, heights=c(3,0.5))
+pdf("Output/ViolinV3.pdf", 11,6) 
+ggarrange(violin.phe,violin.bio,violin.bio2,labels = c("A", "B", "C"),  
+          font.label = list(size = 12, face="plain"), ncol=3,widths=c(3,2,2))
+dev.off()
+
+
+pdf("Output/ViolinV4.pdf", 11,6) 
+ggarrange(violin.phe,violin.bio, ncol = 3, labels = c("A", "B", "C"),
+          ggarrange(violin.bio2,z.plot,nrow=2,labels = c("",""), 
+                    heights = c(6.25,1)), widths=c(3,2,1.5))
 dev.off()
 
 

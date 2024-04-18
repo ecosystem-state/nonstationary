@@ -154,6 +154,10 @@ TUMIdat <- TUMIdat%>%
   add_column('Month'=as.numeric(format(as.Date(TUMIdat$time),"%m")))%>%
   add_column("Day"=as.numeric(format(as.Date(TUMIdat$time),"%d")))
 
+corrplot(cor(pivot_wider(TUMIdat%>%select(station_id,tumi, Year),names_from = station_id, values_from = tumi)%>%
+               select(!Year)),
+         type="upper", order="hclust")
+
 STIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_48N.csv'))%>%
   mutate(station_id='48N')%>%
   bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_45N.csv'))%>%mutate(station_id='45N'))%>%
@@ -168,6 +172,10 @@ STIdat <- STIdat%>%
   add_column("Day"=as.numeric(format(as.Date(STIdat$time),"%d")))
 STIdat%>%filter(station_id=='48N')
 
+corrplot(cor(na.omit(pivot_wider(STIdat%>%select(station_id,sti, Year),names_from = station_id, values_from = sti)%>%
+               select(!Year))),
+         type="upper", order="hclust")
+
 LUSIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_48N.csv'))%>%
   mutate(station_id='48N')%>%
   bind_rows(read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_45N.csv'))%>%mutate(station_id='45N'))%>%
@@ -180,6 +188,10 @@ LUSIdat <- LUSIdat%>%
   add_column('Year'=as.numeric(format(as.Date(LUSIdat$time),"%Y")))%>%
   add_column('Month'=as.numeric(format(as.Date(LUSIdat$time),"%m")))%>%
   add_column("Day"=as.numeric(format(as.Date(LUSIdat$time),"%d")))
+
+corrplot(cor(pivot_wider(LUSIdat%>%select(station_id,lusi, Year),names_from = station_id, values_from = lusi)%>%
+               select(!Year)),
+         type="upper", order="hclust")
 
 phendat <- LUSIdat%>%left_join(STIdat)%>%
   left_join(TUMIdat)
