@@ -117,15 +117,15 @@ SLP_diff_coast
 
 # Coastal ocean subregion 1
 regional.coefs<-NA
-unique(X_Diff_SLP$analysis)
+unique(X_PDO_SLP$analysis)
 ncc_sf <- sf_polygon(bufferNCC%>%dplyr::select(X,Y))
 ccc_sf <- sf_polygon(bufferCCC%>%dplyr::select(X,Y))
 scc_sf <- sf_polygon(bufferSCC%>%dplyr::select(X,Y))
 
 regional_coef_diff<-function(regional_sf) {
-for(i in 1:length(unique(X_Diff_SLP$analysis))){
-  time<-data.frame(unique(X_Diff_SLP$analysis))[i,1]
-  X<-data.frame(X_Diff_SLP%>%filter(analysis==time)%>%
+for(i in 1:length(unique(X_PDO_SLP$analysis))){
+  time<-data.frame(unique(X_PDO_SLP$analysis))[i,1]
+  X<-data.frame(X_PDO_SLP%>%filter(analysis==time)%>%
      dplyr::select(longitude,latitude,  coefficient))
   r<-st_as_sf(X,coords = c("longitude","latitude"))
   coef_in_tract <- st_join(r,regional_sf,join = st_within)
@@ -150,6 +150,8 @@ coef_diff<-ncc_coef_diff%>%add_row(ccc_coef_diff)%>%add_row(scc_coef_diff)
 
 diff_summary<- coef_diff%>%dplyr::select(-X, -Y)%>%group_by( region,analysis)%>%
   summarise(mean=mean(as.numeric(coef)), sd=sd(as.numeric(coef)))
+
+write.csv(diff_summary, "slp_summary.csv")
 
 SLP_diff_coast<-ggplot() + 
   geom_raster(data=coef_diff, aes(x=X,y=Y,fill = coef)) + 
