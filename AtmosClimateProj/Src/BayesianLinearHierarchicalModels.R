@@ -1428,6 +1428,7 @@ na.omit(overlap.RREAS_Woffset),na.omit(overlap.RREASoffset),na.omit(overlap.RREA
 na.omit(overlap.northern),na.omit(overlap.northernW),
 na.omit(overlap.southern),na.omit(overlap.southernW),
 na.omit(overlap.up), na.omit(overlap.upW))
+saveRDS(overlap_full, file = 'data/overlap_Results.rds')
 
 saveRDS(Full_Results, file = here('data/Full_Results.rds'))
 
