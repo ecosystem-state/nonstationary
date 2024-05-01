@@ -117,15 +117,15 @@ SLP_diff_coast
 
 # Coastal ocean subregion 1
 regional.coefs<-NA
-unique(X_PDO_SLP$analysis)
+unique(ddd$analysis)
 ncc_sf <- sf_polygon(bufferNCC%>%dplyr::select(X,Y))
 ccc_sf <- sf_polygon(bufferCCC%>%dplyr::select(X,Y))
 scc_sf <- sf_polygon(bufferSCC%>%dplyr::select(X,Y))
 
 regional_coef_diff<-function(regional_sf) {
-for(i in 1:length(unique(X_PDO_SLP$analysis))){
-  time<-data.frame(unique(X_PDO_SLP$analysis))[i,1]
-  X<-data.frame(X_PDO_SLP%>%filter(analysis==time)%>%
+for(i in 1:length(unique(ddd$analysis))){
+  time<-data.frame(unique(ddd$analysis))[i,1]
+  X<-data.frame(ddd%>%filter(analysis==time)%>%
      dplyr::select(longitude,latitude,  coefficient))
   r<-st_as_sf(X,coords = c("longitude","latitude"))
   coef_in_tract <- st_join(r,regional_sf,join = st_within)
@@ -146,39 +146,61 @@ colnames(ccc_coef_diff)<-c("coef","X","Y","analysis","region")
 scc_coef_diff<-na.omit(cbind(regional_coef_diff(scc_sf),region="SCC"))
 colnames(scc_coef_diff)<-c("coef","X","Y","analysis","region")
 
-coef_diff<-ncc_coef_diff%>%add_row(ccc_coef_diff)%>%add_row(scc_coef_diff)
+coef_diff<-ncc_coef_diff%>%
+  add_row(ccc_coef_diff)%>%
+  add_row(scc_coef_diff)%>%
+    mutate(index = case_when(grepl("PDO", analysis) ~ "PDO",
+                           grepl("NPGO", analysis) ~ "NPGO",
+                           grepl("ONI", analysis) ~ "ONI",
+                           grepl("NPH", analysis) ~ "NPH"))%>%
+  mutate(era = case_when(grepl("1967 - 1988", analysis) ~ "Era 1",
+                         grepl("1989 - 2012", analysis) ~ "Era 2",
+                         grepl("2013 - 2023", analysis) ~ "Era 3",
+                         grepl("1967 - 2023", analysis) ~ "Full"))%>%
+  mutate(period = case_when(grepl("1967 - 1988", analysis) ~ "1967 - 1988",
+                            grepl("1989 - 2012", analysis) ~ "1989 - 2012",
+                            grepl("2013 - 2023", analysis) ~ "2013 - 2023",
+                             grepl("1967 - 2023", analysis) ~ "1967 - 2023"))
 
-diff_summary<- coef_diff%>%dplyr::select(-X, -Y)%>%group_by( region,analysis)%>%
-  summarise(mean=mean(as.numeric(coef)), sd=sd(as.numeric(coef)))
 
-write.csv(diff_summary, "slp_summary.csv")
+means_summary<- coef_diff%>%
+  dplyr::select(-X, -Y)%>%
+  group_by(region,era, index)%>%
+  summarise(mean=mean(as.numeric(coef)), 
+            sd=sd(as.numeric(coef)),
+             total = n())
+mean(means_summary$sd)
 
-SLP_diff_coast<-ggplot() + 
-  geom_raster(data=coef_diff, aes(x=X,y=Y,fill = coef)) + 
-  facet_wrap(~analysis, ncol = 4) +
-  geom_polygon(data=bufferNCC,aes(x=x,y=y),color='black',fill=NA)+
-  geom_polygon(data=bufferCCC,aes(x=x,y=y),color='black',fill=NA)+
-  geom_polygon(data=bufferSCC,aes(x=x,y=y),color='black',fill=NA)
+bounds <- 12
+bounds2<- -12
+coef_diff<-coef_diff%>%merge(means_summary)
 
-ncc_coef_diff
+positive=coef_diff %>% filter(as.numeric(coef)>1)%>%count(region,era, index)%>%rename(positive=n)
+negative=coef_diff %>% filter(as.numeric(coef)< -1)%>%count(region,era, index)%>%rename(negative=n)
+#neutral=coef_diff %>% filter(as.numeric(coef)<12&as.numeric(coef)> -12)%>%count(region,era, index)%>%rename(neutral=n)
+neutral=0
+summary_counts<-merge(merge(positive,negative,all.y=TRUE,all.x=TRUE),neutral,all.y=TRUE,all.x=TRUE)
+summary_counts[is.na(summary_counts)] <- 0
+
+coef_summary<-summary_counts %>%
+  mutate(percent_negative = negative/(negative+positive+neutral),
+         percent_positive = positive/(negative+positive+neutral),
+         percent_neutral = neutral/(negative+positive+neutral))%>%
+  merge(means_summary, all.y=TRUE)
 
 
+coef_summary%>%filter(index=="NPH"&region=='NCC')
+coef_summary%>%filter(index=="NPGO"&region=='NCC')
+coef_summary%>%filter(index=="PDO"&region=='NCC')
 
-ncc_sf <- sf_polygon(ncc)
-ncc<-bufferNCC%>%rename(longitude=X, latitude=Y)%>%dplyr::select(longitude,latitude)
+coef_summary%>%filter(index=="NPH"&region=='SCC')
+coef_summary%>%filter(index=="NPGO"&region=='SCC')
 
-X<-data.frame(X_Diff_SLP%>%filter(analysis=="F. ONI 2013:2023 - 1967:2023")%>%
-         dplyr::select(longitude,latitude,  coefficient))
+coef_summary%>%filter(index=="PDO"&region=='SCC')
+coef_summary%>%filter(index=="ONI"&region=='SCC')
 
-r<-st_as_sf(X,coords = c("longitude","latitude"))
 
-tree_in_tract <- st_join(r,ncc_sf,join = st_within)
-df<-na.omit(tree_in_tract)
-plot(tree_in_tract)
-df.data<-data.frame(cbind(coefficient=data.frame(df)$coefficient,st_coordinates(df)))
-colnames(df.data)<-c("coef",'X',"Y")
-ggplot() + 
-  geom_raster(data=df.data, aes(x=X,y=Y,fill = coef)) + 
-  geom_polygon(data=bufferNCC,aes(x=x,y=y),color='black',fill=NA)+
-  geom_polygon(data=bufferCCC,aes(x=x,y=y),color='black',fill=NA)+
-  geom_polygon(data=bufferSCC,aes(x=x,y=y),color='black',fill=NA)
+coef_diff %>% filter(coef>1&region=='NCC'&index=='ONI')%>%count(region,era, index)
+coef_diff %>% filter(coef< -1&region=='NCC'&index=='NPH')%>%count(region,era, index)
+
+write.csv(coef_summary, "slp_summary.csv")
