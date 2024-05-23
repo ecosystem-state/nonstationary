@@ -134,6 +134,25 @@ a.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,gro
   xlab('Longitude (ºW)')+
   theme(legend.position = "none")
 a.plot
+means2<-means2%>%mutate(Year_win=Year)
+a.plotw <-ggplot(data=winter.schroeder,aes(abs(mean.x-360),mean.y, label=Year_win,group=era.lab,col=era.lab))+
+  geom_point(alpha=0.4)+
+  #geom_text(col='grey')+
+  #ggtitle("Center of North Pacific High") +
+  geom_point(data=means2)+
+  theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
+        axis.title.y = element_text(size=7)) +
+  geom_errorbar(data=means2,aes(ymin = mean.y-sd.y, ymax=  mean.y+sd.y), width=0.5) +
+  geom_errorbar(data=means2,aes(xmin = abs(mean.x-360)-sd.x, xmax=  abs(mean.x-360)+sd.x), width=0.5) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  geom_hline(yintercept=mean(winter.schroeder$mean.y),lty=2, col='grey')+
+  geom_vline(xintercept=mean(winter.schroeder$mean.x), lty=2, col='grey')+
+  scale_x_reverse(lim=c(147,125))+
+  ylab('Latitude (ºN)')+
+  theme_bw() +
+  xlab('Longitude (ºW)')+
+  theme(legend.position = "none")
+a.plotw
 
 k.plot <-ggplot(data=spring.schroeder,aes(abs(mean.x-360),mean.y, label=Year,group=era.lab,col=era.lab))+
   geom_point(alpha=0.4)+
@@ -169,6 +188,22 @@ j.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,gro
   xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
 j.plot
 
+j.plotw <-ggplot(data=winter.schroeder,aes(y=mean.max,x=mean.area, label=Year_win,group=era.lab,col=era.lab))+
+  geom_point(alpha=0.4)+
+  # ggtitle("North Pacific High\n Areal Extent and Intensity") +
+  geom_point(data=means2)+
+  theme(axis.title.x = element_blank(), plot.title = element_text(size=8,hjust = 0.5), axis.text = element_text(size=7),
+        axis.title.y = element_text(size=7)) +
+  geom_errorbar(data=means2,aes(xmin = mean.area-sd.area, xmax= mean.area+sd.area), width=0.5) +
+  geom_errorbar(data=means2,aes(ymin = mean.max-sd.intensity, ymax= mean.max+sd.intensity), width=0.5) +
+  scale_colour_manual(values = c(col[1], col[2], col[3]), name = "") +
+  #scale_x_reverse(lim=c(147,135))+
+  ylab('North Pacific High \n Intensity (hPa)')+
+  theme_bw()+
+  geom_hline(yintercept=mean(winter.schroeder$mean.max),lty=2, col='grey')+
+  geom_vline(xintercept=mean(winter.schroeder$mean.area), lty=2, col='grey')+
+  xlab(expression("North Pacific High Area "~(10^6 ~km^2)))
+j.plotw
 
 h.plot <-ggplot(data=spring.schroeder,aes(y=mean.max,x=mean.area, label=Year,group=era.lab,col=era.lab))+
   geom_point()+
@@ -287,6 +322,32 @@ c.plot <- ggplot(plot.dat, aes(year, mean.max)) +
   xlim(1967,2020)
 c.plot
 
+# and calculate standard deviation over 11-year rolling windows for intensity
+NPH.max.sd <- rollapply(winter.schroeder%>%dplyr::select(mean.max), 11, sd, fill=NA)
+plot(1967:2024, NPH.max.sd , type="l") #check plot
+
+# and calculate standard deviation over 11-year rolling windows for area
+NPH.area.sd <- rollapply(winter.schroeder%>%dplyr::select(mean.area.anom), 11, sd, fill=NA)
+plot(1967:2024, NPH.area.sd, type="l") #check plot
+# now fit a non-parametric regression
+
+# first, make a data frame
+plot.dat <- data.frame(year=1972:2019, sd=na.omit(NPH.max.sd))
+# fit the model
+mod <- gam(mean.max ~ s(year), data=plot.dat)
+pred <- predict(mod, se=T, newdata = plot.dat)
+plot.dat$mean <- pred$fit  
+
+c.plotw <- ggplot(plot.dat, aes(year, mean.max)) +
+  geom_line(size=0.2) +
+  geom_line(aes(year, mean), color=cb[6], size=0.4)  +  theme_bw() +
+  ylab("Standard deviation \n (hPa)") +
+  xlab("")+
+  # ggtitle("North Pacific High Intensity Variability (Spring)") +
+  geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
+  geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
+  xlim(1967,2020)
+c.plotw
 
 # first, make a data frame
 plot.dat <- data.frame(year=1972:2018, sd=na.omit(NPH.area.sd))
@@ -414,10 +475,13 @@ map<-ggplot() +
                    y=c(22.1, 22.1,34.4486,34.4486,20)),
                fill='white', col='black',alpha=0.6)+
   geom_polygon(aes(x=c(-110, -127,-130,-110,-110), 
-                   y=c(34.4486,34.4486,40.4401,40.4401,34.4486)),
+                  # y=c(34.4486,34.4486,40.4401,40.4401,34.4486)),
+               y=c(34.4486,34.4486,43,43,34.4486)),
+
                fill='white', col='black',alpha=0.6)+
   geom_polygon(aes(x=c(-110, -130,-130,-110,-110), 
-                   y=c(40.4401,40.4401,49.5,49.5,40.4401)),
+                  # y=c(40.4401,40.4401,49.5,49.5,40.4401)),
+               y=c(43,43,49.5,49.5,43)),
                fill='white', col='black',alpha=0.6)+
   geom_sf(data = world)+
   annotate("rect", xmin= -121.5, xmax = -109, ymin = 42, ymax = 48.8, 
@@ -433,9 +497,9 @@ map<-ggplot() +
   annotation_scale()+
   annotation_north_arrow(which_north = "true",pad_x = unit(0.25, "in"), 
                          pad_y = unit(0.25, "in"))+
-  annotate(geom = "text", x = c(-127,-118.5,-129), y = c(37,28,45), 
+  annotate(geom = "text", x = c(-127.5,-118.5,-129), y = c(39,28,46.5), 
            label = str_wrap(c("Central", "Southern","Northern"), width = 20),
-           fontface = "italic", color = "grey22", size = 3.75, angle=c('290', '311','270')) +
+           fontface = "italic", color = "grey22", size = 3.75, angle=c('285', '311','270')) +
   annotate(geom = "text", x = c(-114,-114,-114,-114,-114), y = c(48,46.5,45, 44,43), 
            label = str_wrap(c("Upwelling Data","CC Regions", "Newport Line","CalCOFI", "RREAS"), width = 22),
            color = "grey22", size =3.5) +
@@ -562,3 +626,6 @@ ggarrange(ggarrange(a.plot,j.plot,c.plot, nrow = 3, labels = c("A", "B", "C")),
                     ncol=2,labels = c("","D"))
 dev.off()
 
+pdf("Output/Fig NPH Winter.pdf", 6,6.5) 
+ggarrange(a.plotw,j.plotw,c.plotw, nrow = 3, labels = c("A", "B", "C"))
+dev.off()

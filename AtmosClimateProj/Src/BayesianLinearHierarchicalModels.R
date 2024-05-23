@@ -17,6 +17,7 @@ library(maptools)   #useful tools such as reading shapefiles
 library(mapproj)
 library(PBSmapping)
 library(bayestestR)
+library(dplyr)
 set.seed(1234)
 
 ##### Writing Bayes DFA model function ####
@@ -115,8 +116,10 @@ data <- climate_dat_cop%>%filter(season=="Summer")%>%
   pivot_longer(!c(Year_lag, season, estimate,trend), 
                names_to = "Index_Name", values_to = "Index_Value")
 
+
+
 dat.long<- dat%>%filter(season=="Spring")%>%
-  dplyr::select(Year_lag, season, estimate,trend,
+  dplyr::select(Year_lag, season, estimate,trend,estimateoffset1,
          seasonal_NPH,seasonal_NPGO,seasonal_PDO,seasonal_ONI)%>%
   rename(NPH=seasonal_NPH,NPGO=seasonal_NPGO,PDO=seasonal_PDO,ONI=seasonal_ONI)%>%
   distinct()%>%
@@ -133,18 +136,21 @@ dat.lm<-data%>%
   mutate(trend = fct_relevel(trend, "Northern Copepod (NCC)", 
                               "Southern Copepod (NCC)","RREAS (CCC)","CALCOFI (SCC)"))
 
-survey.lm<-ggplot(data = dat.lm, aes(y = estimate, x =Index_Value,col=as.factor(period))) +
+survey.lm<-ggplot(data = dat.lm%>%filter(period!=4), aes(y = estimate, x =Index_Value,col=as.factor(period))) +
   facet_grid(Index_Name~trend, scales='free') +
    geom_point(aes(col=as.factor(period))) +
   # geom_text(aes(label=Year_lag,col=as.factor(period))) +
   geom_smooth(method = "lm", se = FALSE, aes(col=as.factor(period))) +
-  geom_smooth(method = "lm", se = FALSE, col='grey') +
+ # geom_smooth(method = "lm", se = FALSE, col='grey') +
   scale_y_continuous(name = "Index of Abundance") +
   scale_color_manual(values =  col[1:3], name="Period",labels=c('1967 - 1988', '1989 - 2012','2013 - 2022'))+
   theme_bw()+
   xlab("Climate Index Value")+
   theme(plot.title = element_text(hjust = 0.5))+
   ggtitle("Spring")
+survey.lm
+
+
 
 pdf(file = "Output/Figures/biological.lm.pdf",   # The directory you want to save the file in
     width = 8.5, # The width of the plot in inches
@@ -199,9 +205,10 @@ ggplot(CALCOFI_full, aes(x = beta),fill = as.factor(period), group=as.factor(per
 
 
 CALCOFI<- bind_rows(CALCOFI,CALCOFI_full)%>%
-  mutate(region="SCC",Season="Spring", lag = 0)
+  mutate(region="SCC",Season="Spring", lag = 0)%>%
+  filter(period!=4)
 
-ggplot(CALCOFI, aes(x = beta,fill = as.factor(period), group=as.factor(period))) +
+CALCOFI_beta<-ggplot(CALCOFI, aes(x = beta,fill = as.factor(period), group=as.factor(period))) +
     theme_bw() +
     facet_wrap(.~Index, ncol = 4, scales='free') +
     geom_density(alpha = 0.7) +
@@ -213,10 +220,6 @@ ggplot(CALCOFI, aes(x = beta,fill = as.factor(period), group=as.factor(period)))
 
 index.names <- unique(CALCOFI$Index)
 period.names <- unique(CALCOFI$period)
-ov1 <- data.frame(ov=
-                    
-overlap(temp%>%filter(period==1)%>%dplyr::select(beta),
-        temp%>%filter(period==2)%>%dplyr::select(beta)))
 
 overlap.CALCOFI <- NA
   for(i in 1:4){
@@ -224,11 +227,11 @@ overlap.CALCOFI <- NA
     ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i])
     ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i])
     ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(3), period2=c(2), Index=index.names[i])
-    ov4 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(4), period2=c(3), Index=index.names[i])
-    ov5 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==1)%>%dplyr::select(beta)), period1=c(4), period2=c(2), Index=index.names[i])
-    ov6 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(4), period2=c(1), Index=index.names[i])
+ #   ov4 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(4), period2=c(3), Index=index.names[i])
+ ##   ov5 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==1)%>%dplyr::select(beta)), period1=c(4), period2=c(2), Index=index.names[i])
+  #  ov6 <- data.frame(ov=overlap(temp%>%filter(period==4)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(4), period2=c(1), Index=index.names[i])
 
-    temp2<-rbind(ov1,ov2,ov3, ov4, ov5, ov6)
+    temp2<-rbind(ov1,ov2,ov3)
     overlap.CALCOFI <-rbind(temp2,overlap.CALCOFI)
   }
 overlap.CALCOFI<-overlap.CALCOFI%>%mutate(Survey="CALCOFI", region="SCC", season="Spring", offset=0) 
@@ -1069,7 +1072,7 @@ STI<-STI%>%mutate(survey="STI",era.region2=period,
                                                                   ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
   dplyr::select(!period)%>%
   left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
-  mutate(Season='Spring', lag=0, era.region=era.region2)
+  mutate(Season='Spring', lag=0, era.region=era.region2,period=as.numeric(as.factor(period)))
 
 
 ggplot(STI, aes(x = beta, fill = as.factor(period))) +
@@ -1084,6 +1087,22 @@ ggplot(STI, aes(x = beta, fill = as.factor(period))) +
 
 postplot(STI, STI$beta)
 postplot(STI,STI$alpha)
+as.numeric(STI$period)
+overlap.sti <- NA
+for(j in 2:4){
+  temp1 <- STI%>%filter(region==region.names[j])
+  for(i in 1:4){
+    temp <- temp1%>%filter(Index==index.names[i])%>%dplyr::select(beta, period,region)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i], region=region.names[j])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i], region=region.names[j])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(3), period2=c(2), Index=index.names[i], region=region.names[j])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.sti <-rbind(temp2,overlap.sti)
+  }
+  
+}
+
+overlap.sti<-overlap.sti%>%mutate(survey="STI")
 
 
 ###### LUSI #######
@@ -1097,7 +1116,7 @@ LUSI<-LUSI%>%mutate(survey="LUSI",era.region2=period,
                                                                     ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
   dplyr::select(!period)%>%
   left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
-  mutate(Season='Spring', lag=0, era.region=era.region2)
+  mutate(Season='Spring', lag=0, era.region=era.region2,period=as.numeric(as.factor(period)))
 
 
 ggplot(LUSI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
@@ -1110,6 +1129,22 @@ ggplot(LUSI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region)
   labs(x = "Slope",
        y = "Posterior density")
 
+overlap.lusi <- NA
+for(j in 2:4){
+  temp1 <- LUSI%>%filter(region==region.names[j])
+  for(i in 1:4){
+    temp <- temp1%>%filter(Index==index.names[i])%>%dplyr::select(beta, period,region)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i], region=region.names[j])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i], region=region.names[j])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(3), period2=c(2), Index=index.names[i], region=region.names[j])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.lusi <-rbind(temp2,overlap.lusi)
+  }
+  
+}
+
+overlap.lusi
+overlap.lusi<-overlap.lusi%>%mutate(survey="LUSI")
 
 ###### TUMI #######
 TUMI<-NULL
@@ -1122,7 +1157,7 @@ TUMI<-TUMI%>%mutate(survey="TUMI",era.region2=period,
                                                                       ifelse(Index=="seasonal_NPH", "NPH","ONI"))))%>%
   dplyr::select(!period)%>%
   left_join(data%>%dplyr::select(region,era.region2,period)%>%distinct())%>%
-  mutate(Season='Spring', lag=0, era.region=era.region2)
+  mutate(Season='Spring', lag=0, era.region=era.region2,period=as.numeric(as.factor(period)))
 
 
 ggplot(TUMI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region))) +
@@ -1136,8 +1171,56 @@ ggplot(TUMI, aes(x = beta, fill = as.factor(period), group=as.factor(era.region)
        y = "Posterior density")
 
 
+overlap.tumi <- NA
+for(j in 2:4){
+  temp1 <- TUMI%>%filter(region==region.names[j])
+  for(i in 1:4){
+    temp <- temp1%>%filter(Index==index.names[i])%>%dplyr::select(beta, period,region)
+    ov1 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(1), period2=c(2), Index=index.names[i], region=region.names[j])
+    ov2 <- data.frame(ov=overlap(temp%>%filter(period==1)%>%dplyr::select(beta),temp%>%filter(period==3)%>%dplyr::select(beta)), period1=c(1), period2=c(3), Index=index.names[i], region=region.names[j])
+    ov3 <- data.frame(ov=overlap(temp%>%filter(period==3)%>%dplyr::select(beta),temp%>%filter(period==2)%>%dplyr::select(beta)), period1=c(3), period2=c(2), Index=index.names[i], region=region.names[j])
+    temp2<-rbind(ov1,ov2,ov3)
+    overlap.tumi <-rbind(temp2,overlap.tumi)
+  }
+  
+}
+
+overlap.tumi<-overlap.tumi%>%mutate(survey="TUMI")
+
+overlap.phe<-na.omit(overlap.tumi)%>%
+  add_row(na.omit(overlap.lusi))%>%
+  add_row(na.omit(overlap.sti))
 
 
+overlap.phe%>%filter(period1==1,period2==3)%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(period1==1,period2==3)%>%summarise(sd=sd(ov))
+
+overlap.phe%>%filter(period1==3,period2==2)%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(period1==3,period2==2)%>%summarise(sd=sd(ov))
+
+overlap.phe%>%filter(region=="Northern CC",period1==3,period2==2)
+overlap.phe%>%filter(region=="Southern CC",period1==3,period2==2)
+overlap.phe%>%filter(region=="Central CC",period1==3,period2==2)
+
+
+overlap.phe%>%filter(ov>0.7&period1==3&period2==2)
+
+
+overlap.phe%>%filter(period1==3&period2==2)%>%
+  group_by(Index)%>%
+  summarise(mean=mean(ov), sd=sd(ov))
+
+overlap.phe%>%filter(period1==3&period2==2)%>%
+  group_by(region)%>%
+  summarise(mean=mean(ov), sd=sd(ov))
+
+overlap.phe%>%filter(period1==3&period2==2)%>%
+  group_by(Index)%>%
+  summarise(mean=mean(ov), sd=sd(ov))
+
+overlap.phe%>%filter(period1==3&period2==2)%>%
+  group_by(Index, region)%>%
+  summarise(mean=mean(ov), sd=sd(ov))
 ##### WINTER Phenology Model Runs #####
 climate_dat <-readRDS(here('data/physical/climate_dat_upwelling.rds'))
 season <- "Winter"
@@ -1264,10 +1347,10 @@ dfa<-readRDS(here('data/physical/climate_dat_dfa.rds'))%>%
   mutate(period=ifelse(Year_lag<1989,1,ifelse(Year_lag>2012,3,2)))%>%
     mutate(region=ifelse(trend=='CALCOFI','SCC',
                 ifelse(trend=="RREAS", 'CCC',0)))%>%
-  dplyr::select(Year_lag, region, trend,  estimate)%>%
+  dplyr::select(Year_lag, season,region, trend,  estimate)%>%
   filter(region!=0)%>%
   distinct()%>%
-  filter(season=="Spring"&region!='GoA'&Year_lag<2023)%>%
+  filter(season=="Spring")%>%
   merge(upwelling_dat%>%filter(season=="Spring"))%>%
   distinct()
 
@@ -1319,8 +1402,8 @@ for(i in 1:length(columns)){
 bioup_NCC_southern_spring<-mutate(bioup_NCC_southern, period=ifelse(period==1,2,3),
                                   Survey="S. Copepod",region="NCC",
                                   Index=ifelse(Index=="stand_bakun_seasonally", "Upwelling", 
-                                               ifelse(Index=="stand_sti", "STI",
-                                                      ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
+                                        ifelse(Index=="stand_sti", "STI",
+                                        ifelse(Index=="stand_tumi", "TUMI","LUSI"))))
 
 #bioup_NCC_southern_full <-NULL
 #columns<-c(which(colnames(climate_dat_cop_southern) == "stand_bakun_seasonally"))
@@ -1443,3 +1526,4 @@ climate_dat_cop%>%filter(region=="NCC")%>%
   distinct()
   
 Violin_Data%>%filter(Season=="Winter"&survey=="TUMI")
+

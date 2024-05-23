@@ -352,3 +352,10 @@ p1 + p3 + p2 + p4 + p6+ p5+plot_layout(ncol = 3,nrow=2)
 dev.off()
 
 
+
+
+df_wider <- fem4mat %>%
+  pivot_wider(names_from = brood_year, values_from = m, values_fill = list(m = NA)) %>%
+  as.data.frame()
+
+numeric_matrix <- as.matrix(df_wider[, -1])

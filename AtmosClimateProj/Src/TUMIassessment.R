@@ -14,7 +14,7 @@ library(strucchange)
 cb <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 # reading in the data 
-TUMI <-read.csv('data/physical/cciea_OC_TUMI.csv')
+TUMI <-read.csv('data/physical/Upwelling_Phenology/cciea_OC_TUMI.csv')
 TUMI <-TUMI %>%
   add_column('Year'=as.numeric(format(as.Date(TUMI$time),"%Y")))%>%
  #select(-time, -X48N)%>%
@@ -81,31 +81,104 @@ bp.y <- breakpoints(y.ts ~ 1)
 summary(bp.y) 
 
 
-
+#### LUSI ####
 # reading in the data 
-STI <-read.csv('data/physical/cciea_OC_STI.csv')
-STI <-STI %>%
-  add_column('Year'=as.numeric(format(as.Date(STI$time),"%Y")))%>%
+LUSI <-read.csv('data/physical/Upwelling_Phenology/cciea_OC_LUSI.csv')
+LUSI <-LUSI %>%
+  add_column('Year'=as.numeric(format(as.Date(LUSI$time),"%Y")))%>%
   select(-time)%>%
-  pivot_longer(c(X33N,X36N, X39N,X42N,X45N), names_to = "Location", values_to = "STI")%>%
+  pivot_longer(c(X33N,X36N, X39N,X42N,X45N,X48N), names_to = "Location", values_to = "LUSI")%>%
   mutate(Location=ifelse(Location=='X33N', '33N',
           ifelse(Location=='X36N','36N',
           ifelse(Location=='X39N', '39N',
           ifelse(Location=='X42N','42N',
-          ifelse(Location=='X45N','45N',Location))))))
+          ifelse(Location=='X45N','45N',
+          ifelse(Location=='X48N','48N',Location)))))))
 
-p.STI<-ggplot(data=STI, 
-       aes(x=Year,y=STI))+
+
+p.LUSI<-ggplot(data=LUSI, 
+       aes(x=Year,y=LUSI))+
   facet_wrap(.~Location, ncol = 3) +
   geom_line(col=cb[6])+
   geom_smooth(se=F, col='grey')+
-  ggtitle('STI')+
+  ggtitle('LUSI')+
   geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
     geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
   #geom_smooth(aes(group=era))+
   theme_bw()+
   theme(plot.title = element_text(hjust = 0.5))
   
+y.ts <- ts(data=LUSI%>%filter(Location=="42N")%>%select(LUSI), 1967, 2022, frequency=1)
+# fit breakpoint model
+bp.y <- breakpoints(y.ts ~ 1)
+summary(bp.y) 
+
+
+#### ROLLING WINDOW #####
+LUSI.sd<-NA
+Year<-unique(LUSI$Year)
+loc<-unique(LUSI$Location)
+for(i in 1:6){
+  temp <- rollapply(LUSI%>%filter(Location==loc[i])%>%select(LUSI), 10, sd, fill=NA)
+LUSI.sd<-cbind(LUSI.sd,temp)
+}
+
+LUSI.sd<-data.frame(LUSI.sd)
+LUSI.sd<-LUSI.sd%>%
+  select(-LUSI.sd)%>%
+  mutate(Year=Year)
+colnames(LUSI.sd)<-c(loc,"Year")
+LUSI.sd<-LUSI.sd%>%
+    pivot_longer(c("33N", "36N", "39N", "42N", "45N","48N"), names_to = "Location", values_to = "LUSI")
+
+p.LUSI.sd<-ggplot(data=LUSI.sd, 
+       aes(x=Year,y=LUSI))+
+  facet_wrap(.~Location, ncol = 3) +
+  geom_line(col=cb[6])+
+  geom_smooth(se=F, col='grey')+
+  ggtitle('LUSI SD 11-Year Rolling Window')+
+
+  geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
+    geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
+  #geom_smooth(aes(group=era))+
+  theme_bw()+
+ theme(plot.title = element_text(hjust = 0.5))
+
+LUSI.ts<-na.omit(LUSI.sd)  
+y.ts <- ts(data=LUSI.ts%>%filter(Location=="42N")%>%select(LUSI), 1972, 2017, frequency=1)
+# fit breakpoint model
+bp.y <- breakpoints(y.ts ~ 1)
+summary(bp.y) 
+
+
+
+#### STI ####
+# reading in the data 
+STI <-read.csv('data/physical/Upwelling_Phenology/cciea_OC_STI.csv')
+STI <-STI %>%
+  add_column('Year'=as.numeric(format(as.Date(STI$time),"%Y")))%>%
+  select(-time)%>%
+  pivot_longer(c(X33N,X36N, X39N,X42N,X45N,X48N), names_to = "Location", values_to = "STI")%>%
+  mutate(Location=ifelse(Location=='X33N', '33N',
+                         ifelse(Location=='X36N','36N',
+                                ifelse(Location=='X39N', '39N',
+                                       ifelse(Location=='X42N','42N',
+                                              ifelse(Location=='X45N','45N',
+                                                     ifelse(Location=='X48N','48N',Location)))))))
+
+
+p.STI<-ggplot(data=STI, 
+              aes(x=Year,y=STI))+
+  facet_wrap(.~Location, ncol = 3) +
+  geom_line(col=cb[6])+
+  geom_smooth(se=F, col='grey')+
+  ggtitle('STI')+
+  geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
+  geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
+  #geom_smooth(aes(group=era))+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5))
+
 y.ts <- ts(data=STI%>%filter(Location=="42N")%>%select(STI), 1967, 2022, frequency=1)
 # fit breakpoint model
 bp.y <- breakpoints(y.ts ~ 1)
@@ -116,9 +189,9 @@ summary(bp.y)
 STI.sd<-NA
 Year<-unique(STI$Year)
 loc<-unique(STI$Location)
-for(i in 1:5){
+for(i in 1:6){
   temp <- rollapply(STI%>%filter(Location==loc[i])%>%select(STI), 10, sd, fill=NA)
-STI.sd<-cbind(STI.sd,temp)
+  STI.sd<-cbind(STI.sd,temp)
 }
 
 STI.sd<-data.frame(STI.sd)
@@ -127,20 +200,20 @@ STI.sd<-STI.sd%>%
   mutate(Year=Year)
 colnames(STI.sd)<-c(loc,"Year")
 STI.sd<-STI.sd%>%
-    pivot_longer(c("33N", "36N", "39N", "42N", "45N"), names_to = "Location", values_to = "STI")
+  pivot_longer(c("33N", "36N", "39N", "42N", "45N","48N"), names_to = "Location", values_to = "STI")
 
 p.STI.sd<-ggplot(data=STI.sd, 
-       aes(x=Year,y=STI))+
+                 aes(x=Year,y=STI))+
   facet_wrap(.~Location, ncol = 3) +
   geom_line(col=cb[6])+
   geom_smooth(se=F, col='grey')+
   ggtitle('STI SD 11-Year Rolling Window')+
-
+  
   geom_vline(xintercept = 1988.5, lty=2, size=0.3) +
-    geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
+  geom_vline(xintercept = 2012.5, lty=2, size=0.3) +
   #geom_smooth(aes(group=era))+
   theme_bw()+
- theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5))
 
 STI.ts<-na.omit(STI.sd)  
 y.ts <- ts(data=STI.ts%>%filter(Location=="42N")%>%select(STI), 1972, 2017, frequency=1)
@@ -173,5 +246,10 @@ dev.off()
 
 pdf("Output/Figures/Phenology/STI.pdf", 7,10) 
 ggarrange( p.STI, p.STI.sd,labels = c("A", "B"),  
+           font.label = list(size = 12, face="plain"), nrow=2)
+dev.off()
+
+pdf("Output/Figures/Phenology/LUSI.pdf", 7,10) 
+ggarrange( p.LUSI, p.LUSI.sd,labels = c("A", "B"),  
            font.label = list(size = 12, face="plain"), nrow=2)
 dev.off()

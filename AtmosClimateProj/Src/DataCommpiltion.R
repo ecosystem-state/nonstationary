@@ -15,6 +15,7 @@ library(dplyr)
 library(rstan)
 library(here)
 library(PNWColors)
+library(corrplot)
 library(maps)       #basic mapping functions and some data
 library(mapdata)    #some additional hires data
 library(maptools)   #useful tools such as reading shapefiles
@@ -50,17 +51,18 @@ bakundat <-read.csv(here('data/physical/Bakun/erdUI246hr_d68d_e898_8529.csv'))%>
 bakun <- bakundat%>%
   add_column('Year'=as.numeric(format(as.Date(bakundat$time),"%Y")))%>%
   add_column('Month'=as.numeric(format(as.Date(bakundat$time),"%m")))%>%
-  add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))
+  add_column("Day"=as.numeric(format(as.Date(bakundat$time),"%d")))%>%
+  add_column("YearDay"=as.numeric(yday(format(as.Date(bakundat$time)))))
 
 #selecting stations and assigning regions
 bakun_region <- bakun%>%
-  filter(station_id=='36N'|station_id=='39N')%>%
+  filter(station_id=='36N'|station_id=='39N'|station_id=='42N')%>%
   mutate(region="Central CC")%>%
   bind_rows(bakun%>%
               filter(station_id=='33N'|station_id=='30N'|station_id=='27N'|station_id=='24N')%>%
               mutate(region="Southern CC"))%>%
   bind_rows(bakun%>%
-              filter(station_id=='42N'|station_id=='45N'|station_id=='48N')%>%
+              filter(station_id=='45N'|station_id=='48N')%>%
               mutate(region="Northern CC"))%>%
   bind_rows(bakun%>%
               filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
@@ -139,6 +141,66 @@ bakun_monthly <- bakun_time%>%
   select(Month, region, Year_lag, monthly_mean, stand_bakun_monthly)
 bakun_time%>%filter(Year_lag==2023&season=='Spring')
 
+
+##### Generating Cumulative Upwelling Plots #####
+bakun_daily <- bakun_region%>%
+  group_by( station_id,Year, YearDay,region)%>%
+  summarise(upwelling_index_sum = mean(na.omit(upwelling_index)))
+
+
+bakun_cum <- bakun_daily%>%
+  group_by(station_id,Year,region)%>%
+  reframe(upwelling_index_cum = cumsum(upwelling_index_sum))%>%
+  add_column(YearDay=bakun_daily$YearDay)
+period2=data.frame(period2=c('1967 - 1988', '1989 - 2013', '2014 - 2022'), period=c('1','2','3'))
+
+bakun_time <-bakun_cum%>%
+  filter(Year>1963 & Year<1989)%>%
+  mutate(period='1')%>%
+  bind_rows(bakun_cum%>%
+              filter(Year>1989 & Year<2014)%>%
+              mutate(period='2'))%>%
+  bind_rows(bakun_cum%>%
+              filter(Year>2013)%>%
+              mutate(period='3'))%>%
+  left_join(period2)
+
+
+ggplot(data = bakun_time, aes(x = YearDay, y = upwelling_index_cum, col=Year)) +
+  facet_wrap(.~station_id, ncol = 3, scales='free') +
+  geom_line(size=0.75,aes(group=as.numeric(Year))) +
+  # geom_smooth(col='red',aes(group=period)) +
+  #scale_x_continuous(name = "Day") +
+  #scale_color_manual(values=col3)+
+  theme_bw()
+
+bakun_time[which.min(bakun_time$upwelling_index_cum),]
+
+CUM<-ggplot(data = bakun_time%>%filter(station_id!='60N'&
+                                         station_id!='24N'&
+                                         station_id!='27N'&
+                                         station_id!='30N'&
+                                         station_id!='51N'&
+                                         station_id!='54N'&
+                                         station_id!='57N'), aes(x = YearDay, y = upwelling_index_cum)) +
+  facet_wrap(station_id~region, scales='free', ncol=3) +
+  #  ggtitle(paste(bakun_time$station_id, "/n", bakun_time$region))+
+  geom_line(size=0.75,aes(group=as.numeric(Year)),col='grey') +
+  geom_smooth(aes(group=period2, colour=period2)) +
+  #scale_x_continuous(name = "Day") +
+  scale_color_manual(values=col[1:3], name="Period")+
+  xlab("Julian Day")+
+  ylab(expression('CUI ' ~ m^3 ~ '/ s / 100m'))+
+  theme_bw()
+CUM
+
+pdf(file = "Output/Figures/CumulativeUpwelling.pdf",   # The directory you want to save the file in
+    width = 8, # The width of the plot in inches
+    height = 8)
+CUM
+#thetaplot
+dev.off()
+
 #### Importing Phenology Data ####
 
 TUMIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_TUMI_48N.csv'))%>%
@@ -154,9 +216,9 @@ TUMIdat <- TUMIdat%>%
   add_column('Month'=as.numeric(format(as.Date(TUMIdat$time),"%m")))%>%
   add_column("Day"=as.numeric(format(as.Date(TUMIdat$time),"%d")))
 
-corrplot(cor(pivot_wider(TUMIdat%>%select(station_id,tumi, Year),names_from = station_id, values_from = tumi)%>%
+corrplot.mixed(cor(pivot_wider(TUMIdat%>%select(station_id,tumi, Year),names_from = station_id, values_from = tumi)%>%
                select(!Year)),
-         type="upper", order="hclust")
+         order="alphabet", title="TUMI", mar=c(0,0,3,0))
 
 STIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_STI_48N.csv'))%>%
   mutate(station_id='48N')%>%
@@ -172,9 +234,11 @@ STIdat <- STIdat%>%
   add_column("Day"=as.numeric(format(as.Date(STIdat$time),"%d")))
 STIdat%>%filter(station_id=='48N')
 
-corrplot(cor(na.omit(pivot_wider(STIdat%>%select(station_id,sti, Year),names_from = station_id, values_from = sti)%>%
-               select(!Year))),
-         type="upper", order="hclust")
+corrplot.mixed(cor(na.omit(scale(pivot_wider(STIdat%>%select(station_id,sti, Year),names_from = station_id, values_from = sti)%>%
+                     select(!Year), center=TRUE, scale=TRUE))),
+               order="alphabet", title="STI", mar=c(0,0,3,0))
+
+
 
 LUSIdat <-read.csv(here('data/physical/Upwelling_Phenology/cciea_OC_LUSI_48N.csv'))%>%
   mutate(station_id='48N')%>%
@@ -189,9 +253,9 @@ LUSIdat <- LUSIdat%>%
   add_column('Month'=as.numeric(format(as.Date(LUSIdat$time),"%m")))%>%
   add_column("Day"=as.numeric(format(as.Date(LUSIdat$time),"%d")))
 
-corrplot(cor(pivot_wider(LUSIdat%>%select(station_id,lusi, Year),names_from = station_id, values_from = lusi)%>%
+corrplot.mixed(cor(pivot_wider(LUSIdat%>%select(station_id,lusi, Year),names_from = station_id, values_from = lusi)%>%
                select(!Year)),
-         type="upper", order="hclust")
+               order="alphabet", title="LUSI", mar=c(0,0,3,0))
 
 phendat <- LUSIdat%>%left_join(STIdat)%>%
   left_join(TUMIdat)
@@ -208,6 +272,8 @@ phen_region <- phendat%>%
   bind_rows(phendat%>%
               filter(station_id=='51N'|station_id=='54N'|station_id=='57N'|station_id=='60N')%>%
               mutate(region="GoA"))
+
+cor(phendat)
 
 
 phen_stand <- phen_region%>%
