@@ -208,15 +208,15 @@ for(l in 1:length(season)){
   }
 
 
-
+unique(factor(Bio_Clim_DLM3$Trend))
 
 colnames(Bio_Clim_DLM2)<-c("Year", "beta", "alpha","beta_se", "alpha_se","Trend","Climate_Index", "season")
 Bio_Clim_DLM2<-data.frame(Bio_Clim_DLM2)
 Bio_Clim_DLM2<-Bio_Clim_DLM2%>%mutate(offset='0')
 Bio_Clim_DLM3<-Bio_Clim_DLM1%>%bind_rows(Bio_Clim_DLM2)
 Bio_Clim_DLM3$Trend <- factor(Bio_Clim_DLM3$Trend,
-                                      levels = c("Northern Copepods",
-                                                 "Southern Copepods",
+                                      levels = c("Southern Copepods",
+                                                 "Northern Copepods",
                                                  "RREAS", "CALCOFI"))
 
 

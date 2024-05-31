@@ -1202,6 +1202,16 @@ overlap.phe%>%filter(region=="Northern CC",period1==3,period2==2)
 overlap.phe%>%filter(region=="Southern CC",period1==3,period2==2)
 overlap.phe%>%filter(region=="Central CC",period1==3,period2==2)
 
+overlap.phe%>%filter(region=="Northern CC",period1==3,period2==2, survey=='TUMI'|survey=="STI", Index=="ONI"|Index=="NPGO"|Index=="PDO")%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(region=="Central CC",period1==3,period2==2, survey=='TUMI'|survey=="STI", Index=="ONI"|Index=="NPGO"|Index=="PDO")%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(region=="Southern CC",period1==3,period2==2, survey=='TUMI'|survey=="STI", Index=="ONI"|Index=="NPGO"|Index=="PDO")%>%summarise(mean=mean(ov))
+
+overlap.phe%>%filter(region=="Northern CC",period1==3,period2==2, survey=='TUMI', Index=="ONI"|Index=="NPGO")%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(region=="Central CC",period1==3,period2==2, survey=='TUMI'|survey=="STI", Index=="ONI"|Index=="NPGO"|Index=="PDO")%>%summarise(mean=mean(ov))
+overlap.phe%>%filter(region=="Southern CC",period1==3,period2==2, survey=='TUMI'|survey=="STI", Index=="ONI"|Index=="NPGO"|Index=="PDO")%>%summarise(mean=mean(ov))
+
+overlap.phe%>%filter(region=="Central CC",period1==3,period2==2, survey=="STI", Index=="NPH")%>%summarise(mean=mean(ov))
+
 
 overlap.phe%>%filter(ov>0.7&period1==3&period2==2)
 
@@ -1511,6 +1521,8 @@ na.omit(overlap.RREAS_Woffset),na.omit(overlap.RREASoffset),na.omit(overlap.RREA
 na.omit(overlap.northern),na.omit(overlap.northernW),
 na.omit(overlap.southern),na.omit(overlap.southernW),
 na.omit(overlap.up), na.omit(overlap.upW))
+
+
 saveRDS(overlap_full, file = 'data/overlap_Results.rds')
 
 saveRDS(Full_Results, file = here('data/Full_Results.rds'))
