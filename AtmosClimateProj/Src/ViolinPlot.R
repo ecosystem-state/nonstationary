@@ -176,7 +176,7 @@ violin.phe <-ggplot(ratio.up%>%filter(survey!="Upwelling"&Season=="Spring"&Diffe
   coord_flip() +
   stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
   ggh4x::facet_grid2(Index~survey) +
-  ylab("Phyical Conditions Posterior Difference") +
+  ylab("Era 3 - Era 2 Slope Difference") +
   xlab("") +
   theme(legend.position="none")+
   geom_hline(aes(yintercept=0), size=0.3) 
@@ -269,7 +269,7 @@ violin.bio <-ggplot(ratio.bio%>%filter(Difference=="2013:2023 - 1989:2012"),
   coord_flip() +
   stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
   ggh4x::facet_grid2(Index~Difference2) +
-  ylab("Biological Posterior \n Difference") +
+  ylab("Era 3 - Era 2 Slope Difference") +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) +
   theme(legend.position="none")
@@ -296,7 +296,7 @@ violin.bio2 <-ggplot(ratio_index%>%filter(Difference=="2013:2023 - 1989:2012" & 
   coord_flip() +
   stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
   ggh4x::facet_grid2(Index~Difference2) +
-  ylab("Biological Posterior Difference") +
+  ylab("Era 3 - Era 2 Slope Difference") +
   xlab("") +
   geom_hline(aes(yintercept=0), size=0.3) +
   theme(legend.position="bottom",axis.text.y=element_blank())

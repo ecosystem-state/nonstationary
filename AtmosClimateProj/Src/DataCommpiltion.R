@@ -26,7 +26,7 @@ library(PBSmapping) #powerful mapping functions developed by Pacific Biological 
 library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
-
+library(bayestestR)
 #### Importing Upwelling ####
 
 here::i_am("Output/BayesianLinearModels.Rmd")
