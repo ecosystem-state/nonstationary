@@ -23,8 +23,9 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(bayestestR)
 library(ggh4x)
+library(ggridges)
 
-#library(ggridges)#### Data Reorg ####
+#### Data Reorg ####
 Violin_Data <-readRDS('data/Violin_Data.rds')
 
 Violin_indices <- filter(Violin_Data, survey!="Upwelling",survey!="TUMI",
@@ -207,6 +208,17 @@ dodge<-0.6
 mean_beta<-Violin_Data%>%group_by(region,period,survey, Season,Index,lag)%>%
   summarise(median_beta=median(beta),sd_beta_80=ci(beta,ci = 0.8, method = "HDI"),
             sd_beta_50=ci(beta,ci = 0.5, method = "HDI"))
+mean_bet$region <- factor(mean_bet$region,
+                           levels = c("SCC","CCC","NCC"))
+mean_bet$survey <- factor(mean_bet$survey,
+                           levels = c("CALCOFI","RREAS","N. Copepod","S. Copepod", 
+                                      "Upwelling","STI","TUMI","LUSI"))
+mean_bet$region <- factor(mean_bet$region,
+                             levels = c("SCC","CCC","NCC"))
+mean_betsurvey <- factor(mean_bet$survey,
+                             levels = c("CALCOFI","RREAS","N. Copepod","S. Copepod", 
+                                        "Upwelling","STI","TUMI","LUSI"))
+
 dist_phe<-ggplot(mean_beta%>%filter(survey=="TUMI"|survey=="STI"|survey=="LUSI")%>%
          filter(Season=="Spring")%>%filter(lag==0), aes(x = median_beta, y=Index,col = as.factor(period))) +
   theme_bw() +
@@ -259,12 +271,6 @@ pdf("Output/Distribution.pdf", 10.5,5)
 ggarrange(dist_phe,dist_bio,dist_bio2, ncol = 3, labels = c("A", "B", "C"), 
           widths=c(4,2,2), heights=c(2,2,1.75))
 dev.off()
-
-
-overlap_data2 <-readRDS('data/Overlap_Results.rds')%>%
-  filter(period1==3&period2==2&season=="Spring"&offset==0)%>%
-  rename(period=period2, lag=offset)%>%
-  bind_rows(overlap_data,overlap_data,overlap_data)
 
 
 
@@ -322,105 +328,89 @@ dev.off()
 
 
 #### Difference Means ####
-mean_beta<-ratio.up%>%group_by(region,survey, Season,Index,lag)%>%
+col4 <-pnw_palette(name="Starfish",n=4,type="discrete")
+mean_beta<-ratio_upwelling%>%group_by(region,survey, Season,Index,lag, Difference)%>%
   summarise(median_beta=median(beta_diff),sd_beta_80=ci(beta_diff,ci = 0.8, method = "HDI"),
-            sd_beta_50=ci(beta_diff,ci = 0.5, method = "HDI"))
+            sd_beta_50=ci(beta_diff,ci = 0.5, method = "HDI"))%>%
+mutate(region=ifelse(region=="Northern CC","NCC",
+                     ifelse(region=="Southern CC", "SCC", "CCC")))
 #ratio.up<-ratio.up%>%left_join(mean_beta)
+mean_beta$region <- factor(mean_beta$region,
+                          levels = c("NCC","CCC","SCC"))
 
-ggplot(data=mean_beta%>%filter(survey=="TUMI"|survey=="STI"|survey=="LUSI")%>%
-         filter(Season=="Spring")%>%filter(lag==0), aes(x=Index, y=median_beta, fill=region)) +
+
+diff_phe<-ggplot(mean_beta%>%filter(survey=="TUMI"|survey=="STI"|survey=="LUSI")%>%
+                   filter(Index=="NPGO"|Index=="PDO"|Index=="ONI"|Index=="NPH")%>%
+                   filter(Season=="Spring")%>%filter(lag==0), aes(x = median_beta, y=Index, col=Difference)) +
   theme_bw() +
-  geom_point()+
-  scale_fill_manual(values=col4[3:1], name="Region")+
-  coord_flip() +
-  stat_summary(fun="median", colour="black", size=1, geom="point", pch=21) +
+  geom_errorbar(aes(xmin=sd_beta_80$CI_low, xmax=sd_beta_80$CI_high),width = 0, lwd=0.3, position =ggstance::position_dodgev(height=dodge))+
+  geom_errorbar(aes(xmin=sd_beta_50$CI_low, xmax=sd_beta_50$CI_high),width = 0, lwd=0.8, position =ggstance::position_dodgev(height=dodge))+
+  geom_point(cex=1.75, position = ggstance::position_dodgev(height=dodge))+
   ggh4x::facet_grid2(region~survey) +
-  ylab("Era 3 slope - Era 2 slope") +
-  xlab("") +
-  theme(legend.position="none")+  
-  geom_errorbar(aes(ymin=sd_beta_80$CI_low, ymax=sd_beta_80$CI_high),width = 0, lwd=0.3)+
-  geom_errorbar(aes(ymin=sd_beta_50$CI_low, ymax=sd_beta_50$CI_high),width = 0, lwd=0.75)+
-  geom_hline(aes(yintercept=0), size=0.3) 
+  ylab("Climate Index") +
+  guides(col=guide_legend(title="Period"))+
+  scale_colour_manual(values=c(col4[4],col4[3],col4[1]), name="Period")+
+  geom_vline(xintercept = 0, lty = 2) +
+  xlab("Slope Difference") +
+  guides(color = guide_legend(nrow = 2))+
+  theme(legend.position="bottom") 
+diff_phe
 
 
-
-
-mean_beta<-ratio.bio%>%group_by(region,survey, Season,Index,lag)%>%
+mean_beta<-ratio_biological%>%group_by(region,survey, Season,Index,lag, Difference)%>%
   summarise(median_beta=median(beta_diff),sd_beta_80=ci(beta_diff,ci = 0.8, method = "HDI"),
             sd_beta_50=ci(beta_diff,ci = 0.5, method = "HDI"))
-#ratio.up<-ratio.up%>%left_join(mean_beta)
-
-ggplot(mean_beta%>%filter(survey=="CALCOFI"|survey=="RREAS"|survey=="N. Copepod"|survey=="S. Copepod")%>%
-         filter(Season=="Spring"&lag==0)%>%
-         filter(lag==0), 
-       aes(x =median_beta,y=Index)) +
+mean_beta$survey <- factor(mean_beta$survey,
+                           levels = c("N. Copepod","S. Copepod","RREAS", "CALCOFI",
+                                      "Upwelling","STI","TUMI","LUSI"))
+mean_beta$region <- factor(mean_beta$region,
+                           levels = c("NCC","CCC","SCC"))
+diff_bio<-ggplot(mean_beta%>%filter(Season=="Spring"&lag==0)%>%
+                   filter(Index=="PDO"|Index=="ONI"|Index=="NPGO"|Index=='NPH')%>%
+                   filter(survey=="CALCOFI"|survey=="RREAS"|survey=="N. Copepod"|survey=="S. Copepod"),
+                 aes(x =median_beta,y=Index, col=as.factor(Difference))) +
   theme_bw()+
-  geom_point(cex=2.5)+
-  
-  geom_errorbar(aes(xmin=sd_beta_80$CI_low, xmax=sd_beta_80$CI_high),width = 0, lwd=0.3)+
-  geom_errorbar(aes(xmin=sd_beta_50$CI_low, xmax=sd_beta_50$CI_high),width = 0,lwd=0.75)+
+  geom_errorbar(aes(xmin=sd_beta_80$CI_low, xmax=sd_beta_80$CI_high),width = 0, lwd=0.3,position = ggstance::position_dodgev(height=dodge))+
+  geom_errorbar(aes(xmin=sd_beta_50$CI_low, xmax=sd_beta_50$CI_high),width = 0, lwd=0.8,position = ggstance::position_dodgev(height=dodge))+
+  geom_point(cex=1.75,position = ggstance::position_dodgev(height=dodge))+
   facet_wrap(~survey,ncol=1) +
-  ylab("Upwelling Index") +
-  scale_colour_manual(values = c(col2[2], col2[3]))+
+  ylab("") +
+  scale_colour_manual(values = c(col4[1],col4[3],col4[4]))+
   geom_vline(xintercept = 0, lty = 2) +
-  xlab("Slope") +
-  theme(legend.position="bottom") 
+  xlab("Slope Difference") +
+  theme(legend.position="none") 
+diff_bio
 
 
 
-
-mean_beta<-ratio_index%>%group_by(survey, Season,Index,lag)%>%
+mean_beta<-ratio_index%>%group_by(region,survey, Season,Index,lag, Difference)%>%
   summarise(median_beta=median(beta_diff),sd_beta_80=ci(beta_diff,ci = 0.8, method = "HDI"),
             sd_beta_50=ci(beta_diff,ci = 0.5, method = "HDI"))
-#ratio.up<-ratio.up%>%left_join(mean_beta)
 
-ggplot(mean_beta%>%filter(Index!="Upwelling")%>%
-         filter(lag==0), 
-       aes(x =median_beta,y=Index)) +
+mean_beta$survey <- factor(mean_beta$survey,
+                           levels = c("N. Copepod","S. Copepod", "RREAS","CALCOFI",
+                                      "Upwelling","STI","TUMI","LUSI"))
+mean_beta$region <- factor(mean_beta$region,
+                           levels = c("NCC","CCC","SCC"))
+
+
+diff_bio2<-ggplot(mean_beta%>%filter(survey=="CALCOFI"|survey=="RREAS"|survey=="N. Copepod"|survey=="S. Copepod")%>%
+                    filter(Index=="TUMI"|Index=="LUSI"|Index=="STI")%>%
+                    filter(lag==0), 
+                  aes(x =median_beta,y=Index, col=Difference)) +
   theme_bw()+
-  geom_point(cex=2.5)+
-  
-  geom_errorbar(aes(xmin=sd_beta_80$CI_low, xmax=sd_beta_80$CI_high),width = 0, lwd=0.3)+
-  geom_errorbar(aes(xmin=sd_beta_50$CI_low, xmax=sd_beta_50$CI_high),width = 0,lwd=0.75)+
+  geom_errorbar(aes(xmin=sd_beta_80$CI_low, xmax=sd_beta_80$CI_high),width = 0, lwd=0.3,position = ggstance::position_dodgev(height=dodge))+
+  geom_errorbar(aes(xmin=sd_beta_50$CI_low, xmax=sd_beta_50$CI_high),width = 0, lwd=0.7,position = ggstance::position_dodgev(height=dodge))+
+  geom_point(cex=1.75,position = ggstance::position_dodgev(height=dodge))+
   facet_wrap(~survey,ncol=1) +
   ylab("Upwelling Index") +
-  scale_colour_manual(values = c(col2[2], col2[3]))+
+  scale_colour_manual(values = c(col4[1],col4[3],col4[4]))+
   geom_vline(xintercept = 0, lty = 2) +
-  xlab("Slope") +
-  theme(legend.position="bottom") 
+  xlab("Slope Difference") +
+  theme(legend.position="none") 
+diff_bio2 
 
-
-
-
-pdf("Output/ViolinV3.pdf", 11,6) 
-ggarrange(violin.phe,violin.bio,violin.bio2,labels = c("A", "B", "C"),  
-          font.label = list(size = 12, face="plain"), ncol=3,widths=c(3,2,2))
+pdf("Output/Difference_Distribution.pdf", 10.5,5) 
+ggarrange(diff_phe,diff_bio,diff_bio2, ncol = 3, labels = c("A", "B", "C"), 
+          widths=c(4,2,2), heights=c(2,2,1.75))
 dev.off()
-
-
-pdf("Output/ViolinV4.pdf", 11,6) 
-ggarrange(violin.phe,violin.bio, ncol = 3, labels = c("A", "B", "C"),
-          ggarrange(violin.bio2,z.plot,nrow=2,labels = c("",""), 
-                    heights = c(6.25,1)), widths=c(3,2,1.5))
-dev.off()
-
-
-violin.bio
-pdf(file = "Output/Figures/violin.pdf",   # The directory you want to save the file in
-    width = 6, # The width of the plot in inches
-    height = 6)
-violin.up
-dev.off()
-
-pdf(file = "Output/Figures/violinSTI.pdf",   # The directory you want to save the file in
-    width = 6, # The width of the plot in inches
-    height = 6)
-violin.sti
-dev.off()
-
-pdf(file = "Output/Figures/violinTUMI.pdf",   # The directory you want to save the file in
-    width = 6, # The width of the plot in inches
-    height = 6)
-violin.tumi
-dev.off()
-
