@@ -1,4 +1,8 @@
 Model,AIC,delAIC
-Single Shared Smooth Term,-4612.02324516639,326.915975999379
-Unshared Smooth Term,-4608.15990457449,330.779316591273
-Single Shared Smooth Term and Group-Level Smooth Term,-4938.93922116577,0
+Single Shared Smooth Term,3312.95102342446,347.786724745762
+Unshared Smooth Term by Area,3264.77610558578,299.611806907079
+Unshared Smooth Term by Runtype,3315.43781200906,350.273513330363
+Unshared Smooth Term by Runtype and Area,3267.6278409767,302.463542298
+Single Shared Smooth Term and Group-Level Smooth Term by Area,2969.78241571827,4.6181170395721
+Single Shared Smooth Term and Group-Level Smooth Term by Runtype,3312.96881965096,347.804520972259
+Single Shared Smooth Term and Group-Level Smooth Term by Runtype and Area,2965.1642986787,0
