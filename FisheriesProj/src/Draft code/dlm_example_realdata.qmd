@@ -1,0 +1,68 @@
+---
+title: "DLMs_shrinkage"
+format: pdf
+editor: visual
+---
+
+## Bayesian GAM model with reduced dimensionality
+
+```{r}
+library(brms)
+library(ggplot2)
+library(dplyr)
+library(MARSS)
+library(ggplot2)
+library(broom.mixed)
+library(loo)
+
+SalmonSurv <- readRDS("data/Salmon/Survival_covariates.rds")
+SalmonSurvCUI<- SalmonSurv%>%filter(stock_name=="Atnarko")%>% #grabbing a single stock, I chose at random
+  dplyr::select(Marine.Survival, brood_year, Beuti_spring, stock_name)%>% #grabbing columns of interest
+  mutate(Survival_scale=scale(Marine.Survival), Beuti_scale=scale(Beuti_spring))%>% #making sure data are normalized
+  rename(year=brood_year)%>%
+ as.data.frame()
+
+# Try GP model -- this works fine, 3 div transitions 
+# fit <- brm(Survival_scale ~ s(year, bs = "gp", k=5) + s(year, bs = "gp", k=5, by = Beuti_scale), data = SalmonSurvCUI,
+#                  control=list(adapt_delta=0.99), iter = 3000, chains = 3)
+# This gets down to 1 div transition
+
+
+
+initial_fit <- brm(Survival_scale ~ s(year, k=5) + s(year, k=5, by = Beuti_scale), #autocor = cor_ar(~ year, p = 1), 
+                   data = SalmonSurvCUI,
+                 control=list(adapt_delta=0.99), iter = 3000, cores=4,chains = 4)
+
+# evaluate fit
+pred <- predict(initial_fit)
+joined <- cbind(SalmonSurvCUI, pred)
+ggplot(joined, aes(year, Estimate)) + 
+  geom_ribbon(aes(ymin = Q2.5, ymax = Q97.5),alpha=0.2) + 
+  geom_line() + 
+  geom_point(aes(year,Survival_scale)) + 
+  ggtitle("Overall fit")
+
+
+  SalmonSurvCUI$predictions <- NA
+  nT <- nrow(SalmonSurvCUI)
+  for (i in (nT-10+1):nT) {
+    # Update the model to use data up to the current time point
+    fit <- update(
+      initial_fit,
+      newdata = SalmonSurvCUI[1:(i-1), ],
+      recompile = FALSE,
+      refresh = 0
+    )
+    
+    # Predict the next time point
+    new_data <- SalmonSurvCUI[i, , drop = FALSE]
+    pred <- posterior_predict(fit, newdata = new_data)
+    SalmonSurvCUI$predictions[i - 1] <- mean(pred)
+  }
+  
+
+```
+
+```{r}
+plot(SalmonSurvCUI$predictions, SalmonSurvCUI$Survival_scale)
+```
